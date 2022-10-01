@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>(u)pLaTeXでPDF出力？ - h20y6m.github.io</title>
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+<header>
+  <p><a href="/">h20y6m.github.io</a></p>
+</header>
+
+<main>
+
+<div>
+  <p>2021年12月04日</p>
+</div>
+
+<h1>(u)pLaTeXでPDF出力？</h1>
+
+<blockquote>
+  <p>これは「<a href="https://adventar.org/calendars/6724">TeX ＆ LaTeX Advent Calendar 2021</a>」の4日目の記事として投稿した『<a href="https://gist.github.com/h20y6m/c9b65053c9e694fc5b03c4a72653c18e">(u)pLaTeXでPDF出力？ · GitHub</a>』の転載です。</p>
+</blockquote>
+
+<h2>はじめに</h2>
+
+<p>少し古いpLaTeXの入門記事には以下のようなコードが書かれていることも多いと思います。</p>
+
+<pre>
+\documentclass{jarticle}
+</pre>
+
+<p>しかし、最近のpLaTeX + dvipdfmx（またはptex2pdf）でPDFを作成している場合、このコードは間違っています。</p>
+
+<p>このファイルを最近のpLaTeXでタイプセットすると以下のような行がログに出力されていると思います。</p>
+
+<pre>
+(c:/texlive/2021/texmf-dist/tex/latex/l3backend/l3backend-dvips.def)))
+</pre>
+
+<p>この<code>l3backend-dvips.def</code>は名前の通りdvipsバックエンド用のファイルです。つまり上記のようなファイルを最近の(u)pLaTeXでタイプセットするとdvips<strong>専用</strong>のDVIファイルが出来上がります。当然このDVIファイルをdvipdfmxで処理した結果は期待通りの出力になるとは限りません。</p>
+
+<p>(u)pLaTeX + dvipdfmxでPDFを作成する場合は以下のように<code>\documentclass</code>のオプションに<strong>必ず</strong><code>dvipdfmx</code>を指定する必要があります。</p>
+
+<pre>
+\documentclass[dvipdfmx]{jarticle}
+</pre>
+
+<p>そうすれば以下のように正しくdvipdfmxバックエンド用のファイル<code>l3backend-dvipdfmx.def</code>が読み込まれます。</p>
+
+<pre>
+(c:/texlive/2021/texmf-dist/tex/latex/l3backend/l3backend-dvipdfmx.def
+</pre>
+
+<p>しかし、初心者ユーザーがこの「おまじない」を入れ忘れてしまったり、LuaLaTeXのようなPDF出力エンジンを使用しているのに「おまじない」を入れてしまたりしてトラブルを引き起こすのは想像に難くないでしょう。この「おまじない」をしなくてすむ方法はないものでしょうか。</p>
+
+<p>残念ながらTeXエンジンからは出力したDVIファイルがその後どのようなDVIウェアで処理されるかを知るすべはありません。TeXエンジンに未来を見る力はないのです。</p>
+
+<p>しかし、もしTeXエンジンが出力したDVIファイルがdvipdfmxで処理されることが分かっていれば自動的に適切なバックエンドが読み込まれるようにできるはずです。というかいっそのことTeXエンジンがdvipdfmxを呼び出してしまえばよいのです。つまり、</p>
+
+<ul>
+  <li>DVIファイルの出力が完了したあと自動的にdvipdfmxを呼び出してPDFファイルに変換する</li>
+  <li>プリミティブを追加しdvipdfmxが呼び出されることをTeXコードから判定できるようにする</li>
+</ul>
+
+<p>のような改造を施せばよいわけです。</p>
+
+<h2>やってみた</h2>
+
+<p>というわけで、やってみました。</p>
+
+<ul>
+  <li><a href="https://github.com/h20y6m/tex-jp-build/tree/texadvent2021_2">GitHub - h20y6m/tex-jp-build at texadvent2021_2</a></li>
+</ul>
+
+<p>TeXエンジン終了時のDVIファイルをクローズ後に自動的にdvipdfmxが起動されPDFファイルが出力されます。</p>
+
+<pre>
+&gt;dir /b
+test.tex
+
+&gt;type test.tex
+\typeout{\string\dvipdfmx=\the\dvipdfmx}
+\documentclass[dvipdfmx]{jarticle}
+\usepackage{bxjalipsum}
+\begin{document}
+\jalipsum{wagahai}
+\end{document}
+
+&gt;platex-dvipdfmx test
+This is e-pTeX, Version 3.141592653-p3.10.0-210701-2.6 (utf8.sjis) (TeX Live 2022/dev) (preloaded format=platex-dvipdfmx)
+ restricted \write18 enabled.
+entering extended mode
+(./test.tex
+pLaTeX2e &lt;2021-06-01&gt;+2 (based on LaTeX2e &lt;2021-11-15&gt;)
+L3 programming layer &lt;2021-11-12&gt;
+\dvipdfmx=1
+(c:/texlive/2021/texmf-dist/tex/platex/base/jarticle.cls
+Document Class: jarticle 2020/09/30 v1.8f Standard pLaTeX class
+(c:/texlive/2021/texmf-dist/tex/platex/base/jsize10.clo))
+(c:/texlive/2021/texmf-dist/tex/latex/bxjalipsum/bxjalipsum.sty)
+(c:/texlive/2021/texmf-dist/tex/latex/l3backend/l3backend-dvipdfmx.def
+(|extractbb --version)) (./test.aux) [1] [2] [3] [4] [5] [6] [7] [8] [9]
+(./test.aux) )
+Output written on test.dvi (9 pages, 51952 bytes).
+run dvipdfmx... test.dvi -&gt; test.pdf
+[1][2][3][4][5][6][7][8][9]
+285695 bytes written
+success.
+Transcript written on test.log.
+
+&gt;dir /b
+test.aux
+test.dvi
+test.log
+test.pdf
+test.tex
+</pre>
+
+<p>【追記】バイナリは<a href="https://gist.github.com/h20y6m/c4cdd4548334060e7d96afe11675faa3">2日目</a>に作った<a href="https://github.com/h20y6m/tlptexbeta">独自リポジトリ</a>にこっそり入れておきます。</p>
+
+<h2>おわりに</h2>
+
+<p>こんなくだらないことを考えていないでLuaLaTeX + LuaTeX-jaに移行しましょう！</p>
+
+</main>
+
+<footer>
+  <p>&copy; 2021 h20y6m</p>
+</footer>
+
+</body>
+
+</html>

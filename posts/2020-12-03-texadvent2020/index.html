@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>(u)pLaTeXでもjlreqクラスで多書体化したい - h20y6m.github.io</title>
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+<header>
+  <p><a href="/">h20y6m.github.io</a></p>
+</header>
+
+<main>
+
+<div>
+  <p>2020年12月03日</p>
+</div>
+
+<h1>(u)pLaTeXでもjlreqクラスで多書体化したい</h1>
+
+<blockquote>
+  <p>これは「<a href="https://adventar.org/calendars/5111">TeX ＆ LaTeX Advent Calendar 2020</a>」の3日目の記事として投稿した『<a href="https://gist.github.com/h20y6m/4f04a5b44179b80c51353832ce41bc61">(u)pLaTeXでもjlreqクラスで多書体化したい · GitHub</a>』の転載です。</p>
+</blockquote>
+
+<p>この記事では(u)pLaTeX上の<a href="https://github.com/abenori/jlreq">jlreqクラス</a>で多書体化する方法と、拙作の<a href="https://github.com/h20y6m/jlreq-deluxe">jlreq-deluxeパッケージ</a>の紹介をします。</p>
+
+<h2>otfパッケージで多書体化する方法</h2>
+
+<p>(u)pLaTeXで多書体化と言えば真っ先に思いつくのは<a href="https://github.com/texjporg/japanese-otf-mirror">otfパッケージ</a>のdeluxeオプションでしょう。</p>
+
+<pre>
+\usepackage[deluxe]{otf}
+</pre>
+
+<p>これだけで</p>
+
+<ul>
+  <li>明朝体・細字（<code>\mcfamily\ltseries</code>）</li>
+  <li>明朝体・中字（<code>\mcfamily\mdseries</code>）</li>
+  <li>明朝体・太字（<code>\mcfamily\bfseries</code>）</li>
+  <li>ゴシック体・中字（<code>\gtfamily\mdseries</code>）</li>
+  <li>ゴシック体・太字（<code>\gtfamily\bfseries</code>）</li>
+  <li>ゴシック体・極太字（<code>\gtfamily\ebseries</code>）</li>
+  <li>丸ゴシック体（<code>\mgfamily</code>）</li>
+</ul>
+
+<p>の7書体が簡単に使えるようになります。</p>
+
+<p>ではjlreqクラスではどうなるか、以下の例をタイプセットしてましょう（<a href="https://qiita.com/zr_tex8r/items/91ae1dcc9c3afce7fa8c">こちらの記事</a>の例をpLaTeX用に改変しました）。</p>
+
+<pre>
+% pLaTeX+dvipdfmx 文書
+% A6判縦組, 一段組, 基底サイズ9pt
+\documentclass[dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
+% ぶら下げ組を有効にする
+  hanging_punctuation]{jlreq}
+\usepackage{bxpapersize}% 用紙サイズを反映させる
+% otfパケージで多書体化
+\usepackage[deluxe,scale=1]{otf}
+\usepackage{bxjalipsum}% "吾輩は猫である"したい
+\begin{document}
+%「吾輩は猫である」の4～6段落目の文章
+\jalipsum[4-6]{wagahai}
+\end{document}
+</pre>
+
+<p>出力結果を見ると<code>hanging_punctuation</code>を指定しているのにぶら下げ組になっていません（<code>\usepackage[deluxe,scale=1]{otf}</code>をコメントアウトして比べてみてください）。ぶら下げ組は分かりやすい例ですが、それ以外にも文字間のアキの入り方が変わってきます。</p>
+
+<p>どうしてこのようことになるかというと、jlreqクラスは独自のJFM（文字の組み方のパラメーター）を使っているのですが、otfパケージを読み込むとJFMがotfパケージのものに置き換わってしまうために組版結果が変わってしまったのです。</p>
+
+<p>jlreqクラスの組版を維持したままで多書体化するためにはjlreqのJFMを維持したままで多書体化に対応したVF/JFMを用意する必要があります。</p>
+
+<blockquote>
+  <p>余談：上の例ではotfパケージのオプションに<code>scale=1</code>を指定しています。これは和文スケール値でjsarticle等の場合は自動で適切な値が設定されますがjlreqクラスの場合は自分で指定する必要があります。jlreqクラスの規定値は<code>1</code>ですが、<code>fontsize</code>と<code>jafontsize</code>の両方を指定した場合や<code>jafontscale</code>を指定した場合は適切な値にする必要があります。ところで、わざとらしい例ですが<code>fontsize=9pt,jafontsize=12Q</code>の場合の適切な値が<code>scale=0.94841</code>になることはみなさんは分かりますか？</p>
+</blockquote>
+
+<h2>jlreqクラスが使うJFM</h2>
+
+<p>jlreqクラスは組み方に合わせて様々なJFMを使っています。(u)pLaTeXの場合に使われるJFMの名前は以下のようになっています。</p>
+
+<pre>
+[u][b][z]jlreq[g][-v]
+</pre>
+
+<ul>
+  <li><code>u</code>: upLaTeX用</li>
+  <li><code>b</code>: ぶら下げ組用</li>
+  <li><code>z</code>: <code>open_bracket_pos=zenkakunibu_nibu</code>用</li>
+  <li><code>g</code>: ゴシック用</li>
+  <li><code>-v</code>: 縦組み用</li>
+</ul>
+
+<p>明朝用とゴシック用はJFM名が異なるだけなので1書体あたり16種類のJFMがあることになります。</p>
+
+<p>つまりjlreqクラスで書体を1つ増やすためには16種類のVF/JFMを作成する必要があります。</p>
+
+<h2>(u)pLaTeXでフォントを増やす方法</h2>
+
+<p>jlreqのJFMを維持したまま新しいVF/JFMを作成する簡単な方法はjlreqのVF/JFMをフォント名だけ変更して複製する事でしょう。この方法はdoraTeXさんの記事「<a href="https://doratex.hatenablog.jp/entry/20161206/1480950097">(u)pTeX における和文多書体の実現 ～Sierraの全和文フォント出力を例として～</a>」が非常に参考になります。</p>
+
+<p>例えばpLaTeXでぶら下げ組で組んでいる場合に、<code>kyo</code>というファミリーを追加し「UDデジタル教科書体」を割り当ててみます。</p>
+
+<p>まずjfmutilを利用してVF/JFMのコピーを作成します。</p>
+
+<pre>
+&gt; jfmutil vfcopy bjlreq   kyor-bjlreq   r-kyor-bjlreq
+&gt; jfmutil vfcopy bjlreq-v kyor-bjlreq-v r-kyor-bjlreq-v
+&gt; jfmutil vfcopy bjlreq   kyob-bjlreq   r-kyob-bjlreq
+&gt; jfmutil vfcopy bjlreq-v kyob-bjlreq-v r-kyob-bjlreq-v
+</pre>
+
+<p>次のようなソースファイルを作成します。</p>
+
+<pre>
+\documentclass[platex,dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
+  hanging_punctuation]{jlreq}
+\usepackage{bxpapersize}
+\usepackage{bxjalipsum}
+\DeclareFontFamily{JY1}{kyo}{}
+\DeclareFontFamily{JT1}{kyo}{}
+\DeclareFontShape{JY1}{kyo}{m}{n}{&lt;-&gt;s*[1]kyor-bjlreq}{}
+\DeclareFontShape{JT1}{kyo}{m}{n}{&lt;-&gt;s*[1]kyor-bjlreq-v}{}
+\DeclareFontShape{JY1}{kyo}{b}{n}{&lt;-&gt;s*[1]kyob-bjlreq}{}
+\DeclareFontShape{JT1}{kyo}{b}{n}{&lt;-&gt;s*[1]kyob-bjlreq-v}{}
+\AtBeginDvi{%
+  \special{pdf:mapline r-kyor-bjlreq   H :0:UDDigiKyokashoN-R.ttc}%
+  \special{pdf:mapline r-kyor-bjlreq-v V :0:UDDigiKyokashoN-R.ttc}%
+  \special{pdf:mapline r-kyob-bjlreq   H :0:UDDigiKyokashoN-B.ttc}%
+  \special{pdf:mapline r-kyob-bjlreq-v V :0:UDDigiKyokashoN-B.ttc}%
+}
+\renewcommand{\mcdefault}{kyo}% デフォルトの明朝体を教科書体にしてみる
+\begin{document}
+\jalipsum[4]{wagahai}\par
+{\bfseries\jalipsum[5]{wagahai}\par}
+\jalipsum[6]{wagahai}\par
+\end{document}
+</pre>
+
+<p>なお<code>\DeclareFontShape</code>の<code>[1]</code>の部分はクラスオプションの<code>fontsize</code>・<code>jafontsize</code>・<code>jafontscale</code>に応じた適切な和文スケールにする必要があります。</p>
+
+<p>この方法で好きなだけフォントを増やすことが出来ます。一方でこの方法ではotfパケージの<code>\CID</code>や<code>\ajSnowman</code>などの命令は使えません。</p>
+
+<h2>pxjodelパケージでdeluxeする</h2>
+
+<p>otfパケージの<code>\CID</code>や<code>\ajSnowman</code>などの機能も使いたい場合はjlreqのJFMを維持したままotfパケージのVF/JFMの構造に合わせたVF/JFMを作成するというヤヤコシイ作業が必要になります。</p>
+
+<p>このヤヤコシイ作業が簡単に出来るZRさん作成の<a href="https://github.com/zr-tex8r/PXjodel">pxjodelパケージ</a>があります。</p>
+
+<p>先ほどと同様にpLaTeXでぶら下げ組で組んでいる場合を例にしてみます。</p>
+
+<p>まずjfmutilのjodelサブコマンドでVF/JFMを作成します。</p>
+
+<pre>
+&gt; jfmutil jodel bjlreq   bjlreq
+&gt; jfmutil jodel bjlreq-v bjlreq
+</pre>
+
+<p>あとはotfパケージの代わりにpxjodelパケージを<code>prefix</code>オプション付きで読み込むだけです。</p>
+
+<pre>
+\documentclass[platex,dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
+  hanging_punctuation]{jlreq}
+\usepackage{bxpapersize}
+% otfパケージの代わりにpxjodelパケージを読み込む
+\usepackage[deluxe,scale=1,prefix=bjlreq]{pxjodel}
+\usepackage{bxjalipsum}
+\begin{document}
+\jalipsum[4]{wagahai}\par
+{\bfseries\jalipsum[5]{wagahai}\par}
+\jalipsum[6]{wagahai}\par
+\clearpage
+% \CID等も使える
+森\UTF{9DD7}外と内田百\UTF{9592}とが\UTF{9AD9}島屋に行くところを想像した。\par
+\CID{7652}飾区の\CID{13706}野家\par
+\ajSnowman は素敵\par
+\end{document}
+</pre>
+
+<h2>jlreq-deluxeパケージ</h2>
+
+<p>pxjodelパケージを使えばjlreqクラスでもotfパケージの機能を使って多書体化することがなりますが、jlreqクラスのオプションに合わせてpxjodelパッケージのオプションも調整する必要がありちょっぴり面倒です。</p>
+
+<p>そこで読み込むだけでjlreqクラスを多書体化できる<a href="https://github.com/h20y6m/jlreq-deluxe">jlreq-deluxeパッケージ</a>を作成しました。</p>
+
+<pre>
+\documentclass[platex,dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
+  hanging_punctuation]{jlreq}
+\usepackage{bxpapersize}
+% jlreq-deluxeパケージを読み込むだけ
+\usepackage{jlreq-deluxe}
+\usepackage{bxjalipsum}
+\begin{document}
+\jalipsum[4]{wagahai}\par
+{\bfseries\jalipsum[5]{wagahai}\par}
+\jalipsum[6]{wagahai}\par
+\clearpage
+森\UTF{9DD7}外と内田百\UTF{9592}とが\UTF{9AD9}島屋に行くところを想像した。\par
+\CID{7652}飾区の\CID{13706}野家\par
+\ajSnowman は素敵\par
+\end{document}
+</pre>
+
+<p>pxjodelパッケージを使う場合に比べて以下の特徴があります。</p>
+
+<ul>
+  <li><code>deluxe</code>オプションが既定で設定されます。
+    <ul>
+      <li>そもそも多書体化が目的なのでデフォルトでONにしています。</li>
+    </ul>
+  </li>
+  <li>jlreqクラスの内部マクロを使って<code>prefix</code>や<code>scale</code>オプションを自動的に設定します。</li>
+  <li><code>expert</code>オプションが利用可能です。
+    <ul>
+      <li>expert用のVF/JFMはjfmutilでは作成されません。</li>
+    </ul>
+    </li>
+    <li><code>jis2004</code>オプションが既定で設定されます。
+      <ul>
+        <li>現在のTeX Liveの和文フォントの設定がJIS2004字形になっているのでこれをデフォルトにしています。</li>
+       <li>kanji-config-updmapの設定値を取得する方法があればよいのですが……</li>
+    </ul>
+  </li>
+</ul>
+
+<h2>最後に</h2>
+
+<p>今年の重点テーマは「このパッケージもスゴイ！」だそうです。</p>
+
+<p>というわけでjlreq-deluxeパケージのスゴイ点を1つ紹介しておきます。</p>
+
+<p>それは……「TeX Liveのパケージの中でサイズが最も大きなパケージである」ことです。</p>
+
+<table >
+  <thead>
+    <tr>
+      <th>name</th>
+      <th>size [MiB]</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>jlreq-deluxe</td>
+      <td>372</td>
+    </tr>
+    <tr>
+      <td>noto</td>
+      <td>198</td>
+    </tr>
+    <tr>
+      <td>context</td>
+      <td>170</td>
+    </tr>
+    <tr>
+      <td>japanese-otf</td>
+      <td>121</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>なんと2位のnotoパケージを2倍近く引き離すぶっちぎりの1位です。</p>
+
+<p>こんなに巨大になってしまっている主な要因はVirtual Font (VF)です。パッケージサイズのうちVFが占めるのは実に99%以上でさらにそのうち90%以上がupTeX用です。</p>
+
+<p>今年に入って「<a href="https://github.com/texjporg/tex-jp-build/issues/99">和文vf の fallback を dviware で</a>」が提案されました。これを利用するとVFのサイズを大幅に削減できるようになります。</p>
+
+<p>jlreq-deluxeパッケージのVFもこの機能を利用することで370 MiBから1.1 MiBまで軽量化することが出来ます。このVFを軽量化したものをTeX Live 2021に合わせてリリースする予定です。</p>
+
+</main>
+
+<footer>
+  <p>&copy; 2020 h20y6m</p>
+</footer>
+
+</body>
+
+</html>

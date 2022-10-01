@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>独自TeX Liveリポジトリを作ってみる話 - h20y6m.github.io</title>
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+<header>
+  <p><a href="/">h20y6m.github.io</a></p>
+</header>
+
+<main>
+
+<div>
+  <p>2021年12月02日</p>
+</div>
+
+<h1>独自TeX Liveリポジトリを作ってみる話</h1>
+
+<blockquote>
+  <p>これは「<a href="https://adventar.org/calendars/6724">TeX ＆ LaTeX Advent Calendar 2021</a>」の2日目の記事として投稿した『<a href="https://gist.github.com/h20y6m/c4cdd4548334060e7d96afe11675faa3">独自TeX Liveリポジトリを作ってみる話 · GitHub</a>』の転載です。</p>
+</blockquote>
+
+<p>この記事ではpTeXの開発版バイナリを独自リポジトリからTeX Live Managerを使用してインストールする方法を紹介します。</p>
+
+<p>実際に作成したものは以下にあります。</p>
+
+<ul>
+  <li><a href="https://github.com/h20y6m/tlptexbeta">h20y6m/tlptexbeta</a></li>
+</ul>
+
+<h2>はじめに</h2>
+
+<p>この記事を読んでいる人の中にはaminophenさんの「<a href="https://acetaminophen.hatenablog.com/entry/2021/06/18/022108">pLaTeX が本格的にやばいかもという話</a>」を読んだことがある人も多いかもしれません。その中で挙げられている「和文と欧文が混同されてしまう」問題に対処するための開発が<a href="https://github.com/texjporg/tex-jp-build">texjporg/tex-jp-build</a>の<a href="https://github.com/texjporg/tex-jp-build/tree/printkanji_16bit">printkanji_16bit</a>ブランチで行われています。この改修が行われたpTeXバイナリはTeX Live 2022に含まれることになると思いますが、pTeXの内部構造を大きく改造する大改修となるため予期せぬバグが起きる可能性もあります。</p>
+
+<p>そのため早めに改修後のバイナリを試してみたいと思っている人も多いことでしょう。しかし開発版バイナリを既存のTeX Liveのバイナリに上書きしてしまうと既存のバイナリと比較したいときに不便ですし、TeX Liveの更新で戻されてします可能性もあります。バイナリを別の名前にして現行版のバイナリと並行して利用できるようにすることもできますがTeX Liveの更新があった場合に一々手動でフォーマットを再作成する必要があります。またどちらの場合もバイナリを更新したときに手動でフォーマットの再作成が必要となり面倒です。</p>
+
+<p>もし独自のパッケージをTeX Live Managerで管理することが出来ればパッケージの更新時に自動的にフォーマットの再作成を行ってくれるので便利です。TeXLive Managerは<a href="https://contrib.texlive.info/">TLContrib</a>のような外部のリポジトリを追加して利用することが出来ます。独自のリポジトリを作成してTeXLive Managerに追加してあげれば独自のパッケージをTeX Live Managerで管理することが出来るはずです。</p>
+
+<p>そこで今回は独自のTeX Liveリポジトリを作成し、その独自リポジトリから開発版pTeXバイナリをインストールしてみました。独自のTeX Liveリポジトリを作成は<a href="https://github.com/texjporg/tltexjp">tltexjpのリポジトリ</a>を参考にしました。</p>
+
+<h2>バイナリのビルド</h2>
+
+<p>まずは開発版pTeXのバイナリを用意します。今回は現行版と開発版の比較がしやすいように別のコマンドとしてビルドします。開発版のptexはptex-betaのように-beta付きの名前にすることにします。</p>
+
+<p>エンジンの名称を変更するためsource/texk/web2c/texmfmp.hの<code>TEXMFENGINENAME</code>を<code>-beta</code>付に書き換えます。</p>
+
+<p>Linuxの場合、あとは通常通りにビルドした後、出来上がった(e)(u)ptexを(e)(u)ptex-betaにリネームします。また<code>platex-beta -&gt; eptex-beta</code>のようなシンボリックリンクも作成しておきます。</p>
+
+<p>Windowsの場合は角藤先生が作成されているW32TeXのソース（<a href="https://mirror.ctan.org/systems/texlive/Source/">w32tex-src.tar.xz</a>）に開発版の変更をマージしたうえでビルドする必要があります。かなり大変そうなので今回は<a href="https://github.com/h20y6m/tex-jp-build/tree/build_msvc_ptexbeta">こちらの無理矢理MSVCでビルドするやつ</a>を使うことにします。</p>
+
+<h2>リポジトリの作成</h2>
+
+<p>リポジトリの作成はLinux上で行います。今回はUbuntu 20.04 on WSL2上で行いました。</p>
+
+<p>以下のような構成でディレクトリを作成します。このディレクトリはGitでバージョン管理することにします。</p>
+
+<pre>
+./
+|-- bin/
+|   |-- win32/
+|   `-- x86_64-linux/
+|-- texmf-dist/
+|   `-- web2c/
+`-- tlpkg/
+    `-- tlpsrc/
+</pre>
+
+<ul>
+  <li>bin/
+    <ul>
+      <li>上記でビルドしたバイナリファイルを入れます。</li>
+      <li>プラットフォーム毎のサブディレクトリを作成してその下に入れます。</li>
+      <li>シンボリックリンクも入れておきます。</li>
+    </ul>
+  </li>
+  <li>texmf-dist/
+    <ul>
+      <li>今回は使いませんがTeXファイルやドキュメントなどを配置します。</li>
+    </ul>
+  </li>
+  <li>texmf-dist/web2c/
+    <ul>
+      <li>空のディレクトリを作成しておきます。</li>
+      <li>Gitは空のディレクトリを管理できないのでtltexjpに倣って.notneededというファイルを追加しておきます。</li>
+    </ul>
+  </li>
+  <li>tlpkg/tlpsrc/
+    <ul>
+      <li>パッケージの定義ファイルを入れます。</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>共通の定義ファイルの作成</h3>
+
+<p>tlpkg/tlpsrc/に以下のファイルを作成します。</p>
+
+<ul>
+  <li>00texlive.autopatterns.tlpsrc
+    <ul>
+      <li><a href="https://github.com/texjporg/tltexjp/blob/master/tlpkg/tlpsrc/00texlive.autopatterns.tlpsrc">tltexjpのもの</a>をそのまま利用します。</li>
+    </ul>
+  </li>
+  <li>00texlive.config.tlpsrc
+    <ul>
+      <li>以下のような内容で作成します。</li>
+    </ul>
+  </li>
+</ul>
+
+<pre>
+category TLCore
+depend container_format/xz
+depend container_split_doc_files/1
+depend container_split_src_files/1
+depend minrelease/2021
+depend release/2021-tlptexbeta
+</pre>
+
+<ul>
+  <li>00texlive.installation.tlpsrc
+    <ul>
+      <li>以下のような内容で作成します。</li>
+      <li>（tltexjpにはありませんがないとないとスクリプトがエラーをはいたので……）</li>
+    </ul>
+  </li>
+</ul>
+
+<pre>
+category TLCore
+depend opt_autobackup:1
+depend opt_backupdir:tlpkg/backups
+depend opt_create_formats:1
+depend opt_desktop_integration:1
+depend opt_file_assocs:1
+depend opt_generate_updmap:0
+depend opt_install_docfiles:1
+depend opt_install_srcfiles:1
+depend opt_location:__MASTER__
+depend opt_post_code:1
+depend opt_sys_bin:/usr/local/bin
+depend opt_sys_info:/usr/local/share/info
+depend opt_sys_man:/usr/local/share/man
+depend opt_w32_multi_user:1
+depend setting_available_architectures:win32 x86_64-linux
+</pre>
+
+<h3>独自パッケージの定義</h3>
+
+<p>独自パッケージの定義ファイルを作成します。パッケージの定義ファイルはtlpkg/tlpsrc/以下に<code>&lt;packagename&gt;.tlpsrc</code>のような名前で作成します。</p>
+
+<p>今回はptex-betaという名前で独自パッケージを作成します。以下の内容でtlpkg/tlpsrc/ptex-beta.tlpsrcを作成します。</p>
+
+<pre>
+category Package
+shortdesc Development version pTeX
+depend platex
+depend ptex
+depend uplatex
+depend uptex
+execute AddFormat name=eptex-beta       engine=eptex-beta  options="*eptex.ini"   patterns=language.dat fmttriggers=cm,hyphen-base,knuth-lib,plain,ptex-base,ptex-fonts,etex
+execute AddFormat name=euptex-beta      engine=euptex-beta options="*euptex.ini"  patterns=language.def fmttriggers=cm,hyphen-base,knuth-lib,plain,uptex-base,uptex-fonts,etex,ptex-base
+execute AddFormat name=platex-beta      engine=eptex-beta  options="*platex.ini"  patterns=language.dat fmttriggers=atbegshi,atveryend,babel,cm,everyshi,firstaid,hyphen-base,l3backend,l3kernel,l3packages,latex,latex-fonts,tex-ini-files,unicode-data,ptex-fonts,latex
+execute AddFormat name=platex-beta-dev  engine=eptex-beta  options="*platex.ini"  patterns=language.dat fmttriggers=atbegshi,atveryend,babel,cm,everyshi,firstaid,hyphen-base,l3backend,l3kernel,l3packages,latex,latex-fonts,tex-ini-files,unicode-data,ptex-fonts,l3kernel,latex-base-dev,latex-firstaid-dev
+execute AddFormat name=ptex-beta        engine=ptex-beta   options="ptex.ini"                           fmttriggers=cm,hyphen-base,knuth-lib,plain,ptex-base,ptex-fonts
+execute AddFormat name=uplatex-beta     engine=euptex-beta options="*uplatex.ini" patterns=language.dat fmttriggers=atbegshi,atveryend,babel,cm,everyshi,firstaid,hyphen-base,l3backend,l3kernel,l3packages,latex,latex-fonts,tex-ini-files,unicode-data,uptex-fonts,platex,latex
+execute AddFormat name=uplatex-beta-dev engine=euptex-beta options="*uplatex.ini" patterns=language.dat fmttriggers=atbegshi,atveryend,babel,cm,everyshi,firstaid,hyphen-base,l3backend,l3kernel,l3packages,latex,latex-fonts,tex-ini-files,unicode-data,uptex-fonts,platex,l3kernel,latex-base-dev,latex-firstaid-dev
+execute AddFormat name=uptex-beta       engine=uptex-beta  options="uptex.ini"                          fmttriggers=cm,hyphen-base,knuth-lib,plain,uptex-base,uptex-fonts
+binpattern f bin/${ARCH}/eptex-beta
+binpattern f bin/${ARCH}/euptex-beta
+binpattern f bin/${ARCH}/platex-beta
+binpattern f bin/${ARCH}/platex-beta-dev
+binpattern f bin/${ARCH}/ptex-beta
+binpattern f bin/${ARCH}/uplatex-beta
+binpattern f bin/${ARCH}/uplatex-beta-dev
+binpattern f bin/${ARCH}/uptex-beta
+</pre>
+
+<ul>
+  <li><code>shortdesc</code>
+    <ul>
+      <li>パッケージの短い説明を記述します。</li>
+      <li>長い説明を記述する<code>longdesc</code>もあります。</li>
+    </ul>
+  </li>
+  <li><code>depend</code>
+    <ul>
+      <li>依存するパッケージを指定します。</li>
+    </ul>
+  </li>
+  <li><code>execute AddFormat</code>
+    <ul>
+      <li>このパッケージがインストールされたときにフォーマット定義を追加します。</li>
+      <li><code>fmttriggers</code>に指定したパッケージが更新されたときに自動的にフォーマットの再作成が行われます。</li>
+    </ul>
+  </li>
+  <li><code>binpattern</code>
+    <ul>
+      <li>パッケージに含めるバイナリファイルそ指定します。</li>
+      <li>TeXファイルなどを指定する<code>runpattern</code>、ドキュメントファイルを指定する<code>docpattern</code>などもあります。</li>
+    </ul>
+  </li>
+</ul>
+
+<p>またビルドしたptex-betaバイナリ（とシンボリックリンク）をbin/以下の各アーキテクチャごとのディレクトリ入れます。</p>
+
+<p>ここまでで一旦Gitでコミットをしておきます。</p>
+
+<h3>データベースファイル＆コンテナファイルの生成</h3>
+
+<p>データベースファイルtexlive.pdbやコンテナファイルを作成するスクリプトは<a href="https://www.tug.org/svn/texlive/trunk/Master/tlpkg/bin/">TeX Live のリポジトリ</a>にあります。Subversionでチェックアウトしてきてもよいのですが、今回は必要なモノだけ集めたコンテナイメージを作成して使うことにします。</p>
+
+<p>以下のようなDockerfileを作成します。</p>
+
+<pre>
+FROM ubuntu:20.04
+
+RUN apt-get update \
+ &amp;&amp; apt-get install -y --no-install-recommends \
+      git \
+      libtext-unidecode-perl \
+      libxml-parser-perl \
+      libxml-xpath-perl \
+      perl \
+      subversion \
+      xz-utils \
+ &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /opt/texlive/tlpkg &amp;&amp; cd /opt/texlive/tlpkg \
+ &amp;&amp; svn export svn://tug.org/texlive/trunk/Master/tlpkg/TeXLive/ \
+ &amp;&amp; mkdir -p /opt/texlive/tlpkg/bin &amp;&amp; cd /opt/texlive/tlpkg/bin \
+ &amp;&amp; svn export svn://tug.org/texlive/trunk/Master/tlpkg/bin/tl-update-tlpdb \
+ &amp;&amp; svn export svn://tug.org/texlive/trunk/Master/tlpkg/bin/tl-update-containers \
+ &amp;&amp; mkdir -p /opt/texlive/tlpkg/installer &amp;&amp; cd /opt/texlive/tlpkg/installer \
+ &amp;&amp; svn export svn://tug.org/texlive/trunk/Master/tlpkg/installer/config.guess
+
+ENV PATH /opt/texlive/tlpkg/bin:$PATH
+
+WORKDIR /work
+</pre>
+
+<p>コンテナイメージをビルドしておきます。</p>
+
+<pre>
+podman build -t tl-update .
+</pre>
+
+<p>以下の二つのコマンドでデータベースとコンテナファイルを生成します。</p>
+
+<pre>
+podman run --rm -it -v `pwd`:/work tl-update tl-update-tlpdb --master=/work --from-git
+podman run --rm -it -v `pwd`:/work tl-update tl-update-containers --master=/work --location=/work/dist --no-sign --all --recreate
+</pre>
+
+<p>（初回は<code>--recreate</code>オプションが必要なようです。）</p>
+
+<p>dist/tlpkg/以下にtexlive.pdb等のファイルが、dist/archive/以下にptex-beta.r*.tar.xz等のファイルが生成されればOKです。</p>
+
+<h2>独自リポジトリからインストール</h2>
+
+<p>独自リポジトリをTeX Live Managerに登録します。（/path/toの部分はもちろん作ったリポジトリへのパスです。）</p>
+
+<ul>
+  <li>Linux</li>
+</ul>
+
+<pre>
+tlmgr repository add /path/to/tlptexbeta/dist ptexbeta
+tlmgr pinning add ptexbeta '*'
+</pre>
+
+<ul>
+  <li>Windows（コマンドプロンプトを管理者として実行）</li>
+</ul>
+
+<pre>
+tlmgr repository add C:/path/to/tlptexbeta/dist ptexbeta
+tlmgr pinning add ptexbeta "*"
+</pre>
+
+<p>インストールする前にtexlive/2021/texmf.cnfに以下を追記します。（内容はtexlive/2021/texmf-dist/web2c/texmf.cnfの-betaなしのものからコピーしたものです。）</p>
+
+<pre>
+% ptex-beta
+TEXINPUTS.eptex-beta       = $TEXMFDOTDIR;$TEXMF/tex/{ptex,plain,generic,latex,}//
+TEXINPUTS.euptex-beta      = $TEXMFDOTDIR;$TEXMF/tex/{uptex,ptex,plain,generic,latex,}//
+TEXINPUTS.platex-beta      = $TEXMFDOTDIR;$TEXMF/tex/{platex,latex,generic,}//
+TEXINPUTS.platex-beta-dev  = $TEXMFDOTDIR;$TEXMF/tex/{latex-dev,platex,latex,generic,}//
+TEXINPUTS.ptex-beta        = $TEXMFDOTDIR;$TEXMF/tex/{ptex,plain,generic,latex,}//
+TEXINPUTS.uplatex-beta     = $TEXMFDOTDIR;$TEXMF/tex/{uplatex,platex,latex,generic,}//
+TEXINPUTS.uplatex-beta-dev = $TEXMFDOTDIR;$TEXMF/tex/{latex-dev,uplatex,platex,latex,generic,}//
+TEXINPUTS.uptex-beta       = $TEXMFDOTDIR;$TEXMF/tex/{uptex,ptex,plain,generic,latex,}//
+</pre>
+
+<p>TeX Live Managerからptex-betaパッケージをインストールします。TeX Live ManagerのGUIからもインストールできます。</p>
+
+<pre>
+tlmgr install ptex-beta
+</pre>
+
+<p>適当なファイルをコンパイルしてインストールできたか確認します。</p>
+
+<pre>
+$ cat test.tex
+\documentclass[dvipdfmx,a4paper]{jarticle}
+\usepackage{bxjalipsum}
+\begin{document}
+\jalipsum{wagahai}
+\end{document}
+
+$ platex-beta test
+ptenc_ptex_mode is called! (1)
+This is e-pTeX, Version 3.141592653-p3.10.90-210701-2.6 (utf8.euc) (TeX Live 2022/dev) (preloaded format=platex-beta)
+ restricted \write18 enabled.
+entering extended mode
+(./test.tex
+pLaTeX2e &lt;2021-06-01&gt;+2 (based on LaTeX2e &lt;2021-11-15&gt;)
+L3 programming layer &lt;2021-11-22&gt;
+(/usr/local/texlive/2021/texmf-dist/tex/platex/base/jarticle.cls
+Document Class: jarticle 2020/09/30 v1.8f Standard pLaTeX class
+(/usr/local/texlive/2021/texmf-dist/tex/platex/base/jsize10.clo))
+(/usr/local/texlive/2021/texmf-dist/tex/latex/bxjalipsum/bxjalipsum.sty)
+(/usr/local/texlive/2021/texmf-dist/tex/latex/l3backend/l3backend-dvipdfmx.def
+(|extractbb --version)) (./test.aux) [1] [2] [3] [4] [5] [6] [7] [8] [9]
+(./test.aux) )
+Output written on test.dvi (9 pages, 51952 bytes).
+Transcript written on test.log.
+</pre>
+
+<p>うまくいったようです。</p>
+
+<h2>おわりに</h2>
+
+<p>本記事では独自のTeX Liveリポジトリを作成しそこからTeX Live Managerを使用してpTeXの開発版バイナリをインストールする方法を紹介紹介しました。TeX Live Managerによってパッケージを管理することで<code>tlmgr update</code>した場合も必要に応じて自動的にフォーマットを再作成されるようになり一々手動でフォーマットを再作成する必要もなくなりました。</p>
+
+<p>皆さんもぜひ独自TeX Liveリポジトリを作って開発版pTeXを試しましょう！</p>
+
+</main>
+
+<footer>
+  <p>&copy; 2021 h20y6m</p>
+</footer>
+
+</body>
+
+</html>
