@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>LaTeXで旧暦してみる - h20y6m.github.io</title>
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+<header>
+  <p><a href="/">h20y6m.github.io</a></p>
+</header>
+
+<main>
+
+<div>
+  <p>2022年12月02日</p>
+</div>
+
+<h1>LaTeXで旧暦してみる</h1>
+
+<blockquote>
+  <p>これは「<a href="https://adventar.org/calendars/7868">TeX ＆ LaTeX Advent Calendar 2022</a>」の2日目の記事です。<br>（1日目は <a href="https://qiita.com/zr_tex8r/items/0cc96144dd46c212a989">zr_tex8r さん</a>、3日目は <a href="https://adventar.org/calendars/7868">hid_alma1026 さん</a>です。）</p>
+</blockquote>
+
+<h2>LaTeXで和暦してみる</h2>
+
+<p>LaTeXを使って文章を書いていると、時々和暦を出力したくなる、というのはよくあることでしょう。jarticleなどの標準和文文書クラスやjsarticleなどの和文文書クラスでは<code>\和暦</code>命令を使うことで今日の日付（<code>\today</code>）を和暦で出力することが出来るようになります。</p>
+
+<pre>
+\和暦
+\today
+% =&gt; 令和4年12月2日
+</pre>
+
+<p>しかし、これら以外の文書クラスや特定の日を出力したいこともあります。そんな時は<a href="https://www.ctan.org/pkg/bxwareki">bxwarekiパッケージ</a>が便利です。クロスエンジンでXeLaTeXやpdfLaTeXでも利用でき（もちろん和文文字を出力するためのパッケージが別途必要）、今日の日付だけでなく指定した日付の和暦を出力することが出来ます。</p>
+
+<pre>
+\warekitoday % 今日の日付
+% =&gt; 令和4年12月2日
+
+\warekisetdate{2022}{12}{25} % 指定の日付
+\warekidate
+% =&gt; 令和4年12月25日
+</pre>
+
+<p>過去の元号にも対応しています。</p>
+
+<p>平成も、昭和も、大正も、明治も……</p>
+
+<pre>
+\warekisetdate{2018}{4}{31}
+\warekidate
+% =&gt; 平成31年4月31日
+
+\warekisetdate{1983}{6}{19}
+\warekidate
+% =&gt; 昭和58年6月19日
+
+\warekisetdate{1923}{9}{1}
+\warekidate
+% =&gt; 大正12年9月1日
+
+\warekisetdate{1873}{1}{1}
+\warekidate
+% =&gt; 明治6年1月1日
+</pre>
+
+<p>明治も……</p>
+
+<pre>
+\warekisetdate{1872}{12}{31}
+\warekidate
+% =&gt; 1872年12月31日
+</pre>
+
+<p>……あれ？</p>
+
+<p>なぜか西暦になってしまいました。どうしてでしょうか？　とりあえず<a href="http://mirrors.ctan.org/language/japanese/BX/bxwareki/bxwareki.pdf">bxwarekiパッケージのドキュメント</a>（なぜか英語しかない）を読んでみましょう。「1 Overview」に何やら注意事項が書かれています。</p>
+
+<blockquote>
+  <p lang="en">Note that the package only deals with dates in the year 1873 or later, ...</p>
+</blockquote>
+
+<p>どうやら西暦1873年（明治6年）以降しかサポートされていないようです。それにしても明治6年というのはなんだか中途半端な感じがします。続きを読んでみます。</p>
+
+<blockquote>
+  <p lang="en">... where the Japanese calendar is really a Gregorian calendar with the different notation of years.</p>
+</blockquote>
+
+<p>グレゴリオ暦というというのが出てきました。そうです日本がグレゴリオ暦（太陽暦、いわゆる新暦）に移行したのが明治6年1月1日なのです。それ以前は日本の暦は太陽太陰暦いわゆる旧暦が使用されていました。明治6年1月1日以降は西暦の年だけを和暦に変換するだけですが、明治5年以前は月日の変換も必要になってきます。例えば上記の西暦1873年12月31日は和暦では明治5年12月2日です。このように西暦から明治5年以前の和暦への変換は自明ではありません。おそらくこのような事情からbxwarekiは明治6年以降の日付しかサポートしていないのでなないかと思われます。</p>
+
+<p>それではLaTeXでそれ以前の和暦を出力することはできないのでしょうか？　ちょっと調べてみましたが残念ながら明治5年以前の和暦の表示をサポートしているLaTeXパッケージはなさそうです。</p>
+
+<h2>LaTeXで旧暦してみる</h2>
+
+<p>無ければ作ればいいじゃない。</p>
+
+<p>ということで<a href="https://github.com/h20y6m/BXjakyureki">LaTeXで旧暦するパッケージ</a>を作ってみました。</p>
+
+<h3>インストール</h3>
+
+<p>l3buildを使うと簡単にインストールできます。以下のコマンドを実行するとビルドとテストが自動的に行われ、TEXMFHOMEにインストールされます。<code>--full</code>オプションをつけるとドキュメントなども一緒にインストールされます。</p>
+
+<pre>
+l3build install --full
+</pre>
+
+<h3>パッケージの読み込み</h3>
+
+<p>通常通り<code>\usepackage</code>で読み込みます。オプションはありません。</p>
+
+<pre>
+\usepackage{bxjakyureki}
+</pre>
+
+<h3>使い方</h3>
+
+<p><code>\jakyureki</code>命令が使えるようになります。書式は次の通りです。</p>
+
+<pre>
+\jakyureki{&lt;year&gt;}{&lt;month&gt;}{&lt;day&gt;}
+</pre>
+
+<p>指定した西暦の日付に対応する和暦の日付に展開されます。</p>
+
+<pre>
+\jakyureki{1872}{12}{31}
+% =&gt; 明治5年12月2日
+</pre>
+
+<p>応永元年7月5日（西暦1394年8月2日）から明治5年12月2日（西暦1872年12月31日）までの日付をサポートしています。（それ以前は<a href="https://ja.wikipedia.org/wiki/%E5%8D%97%E5%8C%97%E6%9C%9D%E6%99%82%E4%BB%A3_(%E6%97%A5%E6%9C%AC)">南北朝時代</a>をどうすればいいのか分からなかったので……）</p>
+
+<p>なお西暦については1582年10月15日（天正10年9月19日）以降はグレゴリオ暦、それ以前はユリウス暦として扱われます。</p>
+
+<h2>パッケージ作成</h2>
+
+<h3>使ったもの</h3>
+
+<p>今回はexpl3を使ってパッケージを作成しました。またパッケージの開発にはl3buildというツールを使ってみました。</p>
+
+<p>expl3はLaTeX3を開発するために作られたTeX上で動作するプログラミング言語です。LaTeX3は完成することなく消えてしまいましたが、expl3はLaTeX2eカーネルに取り込まれLaTeXの新機能の開発で使われています。TeX言語では複雑なコードを書かなくてはいけないような処理も標準で関数が用意されていたりするので便利です。</p>
+
+<p>l3buildはTeXパッケージ向けのビルドツールです。dtxのstripやドキュメンのタイプセットのほか、リグレッションテスト（いじった所と全然違うところが壊れたというのを検出するテスト）のための仕組みを備えています。またクロスプラットフォームのLuaスクリプトで書かれているのでMakefileが使いずらいWindowsでも安心して使えます。</p>
+
+<h3>使ったデータ</h3>
+
+<p>西暦から旧暦への変換が必要なのですが、この変換は単純な計算式で出来るものではありません。太陽太陰暦は地球と月と太陽の位置関係で決まります。これを計算で求めるにはとてもとても複雑な天体運動のシミュレーション計算が必要になってします。それだけでなく時代によっては「縁起が悪い」などの理由で人為的な調整が行われてたことをもあるため計算だけでは不可能です。そのため旧暦の変換は何らかのデータベースが必須となります。今回は<a href="https://eco.mtk.nao.ac.jp/cgi-bin/koyomi/caldb_s.cgi">国立天文台暦計算室の「暦月・節月データベース」</a>を参照することにしました。</p>
+
+<p>また和暦の変換では元号の情報も必要です。いろいろ探してみたのですがよさそうなものが見つからず結局<a href="https://ja.wikipedia.org/wiki/%E5%85%83%E5%8F%B7%E4%B8%80%E8%A6%A7_(%E6%97%A5%E6%9C%AC)">ウィキペディアの「元号一覧 (日本)」</a>を参照することにしました。</p>
+
+<h3>実装</h3>
+
+<p>実装方法としてはまず西暦（グレゴリオ暦orユリウス暦）の日付から<a href="https://en.wikipedia.org/wiki/Julian_day#Julian_day_number_calculation">ユリウス通日に変換</a>しています。日付を年月日で扱うより連続する数値になっている方がなにかと扱いやすいためです。</p>
+
+<p>次にユリウス通日からざっくりと旧暦の年を計算した後、あらかじめ作っておいた旧暦テーブルを参照し旧暦の日付を求めています。旧暦テーブルは以下のように「年（西暦換算）」毎に「1月1日のユリウス通日」「閏月」「閏月の大小」「各月の大小」となっています。</p>
+
+<pre>
+\cs_gset:cpn { g__bajakyureki_kyureki_data_1870 }
+  { { 2404095 } { 10 } { 0 } { 011010101010 } }
+</pre>
+
+<p>さらに年が西暦換算になっているので、またあらかじめ作っておいた元号リストを検索します。元号リストは以下のように改元日の「年（西暦換算）」「閏月フラグ」「月」「日」と「元号」のリストとなっています。</p>
+
+<pre>
+\tl_gput_right:Nn \g__bxjakyureki_gengo_data_tl
+  { { 1868 } { 0 } {  9 } {  8 } { 明治 } \s__bxjakyureki }
+</pre>
+
+<p>あとは必要もないのになぜか（先頭）完全展開可能になるように実装していたり、コードをASCIIのみにするために文字コード列から日本語文字列のトークン列を生成していたりと、ややこしいことをしていますが、そんなことをしなければそこまで難しい処理はないはずです。</p>
+
+<h2>はまったところとか</h2>
+
+<p>expl3とかl3buildとかを使っている中ではまったところとかです。</p>
+
+<h3>l3intの整数除算は四捨五入</h3>
+
+<p>l3intの<code>\int_*</code>関数の整数式の除算は四捨五入されます。整数除算の結果が整数になるプログラミング言語は切り捨てのことが多いので注意が必要です。切り捨てた結果が欲しいときは<code>\int_div_truncate:nn</code>を使います。</p>
+
+<h3>l3intのスケール演算</h3>
+
+<p>l3intの<code>\int_*</code>関数の整数式では途中も含めて絶対値が<span class="math">2<sup>31</sup> &minus; 1</span>の範囲を超えた場合はオーバーフローエラーが発生しますが、掛け算の直後に割り算が続く場合はスケール演算という一つの演算となり掛け算部分でこの範囲を超えてもエラーにはなりません。例えば365.2422で割りたいときに単純に<code>2451545*10000/3652422</code>のようにしてもオーバーフローの心配がありません。</p>
+
+<h3>l3buildのドキュメントのタイプセットに使えるのはPDFエンジンのみ</h3>
+
+<p>l3buildのドキュメントのタイプセットに使用するエンジンはbuild.luaの<code>typesetexe</code>で指定できますが、ここに指定したコマンドはPDFを出力することが期待されています。また<code>"\input &lt;filename&gt;"</code>のようなコマンドライン引数を処理出来る必要があるためptex2pdfのようなコマンドを指定することもできません。このため日本語ドキュメントをタイプセットしたい場合は<strong>LuaLaTeX一択</strong>になります。</p>
+
+<h3>l3buildはテストログを改竄する</h3>
+
+<p>l3buildのテストではログファイルからテストと無関係な部分を削除してくれますが、これ以外にもログを改竄することがあります。どのようなものが書き換えられるのかは<a href="http://mirrors.ctan.org/macros/latex/contrib/l3build/l3build.pdf">l3buildのドキュメント</a>の「1.12 Output normalisation」に書かれています。この挙動はbuild.luaの設定等で無効にすることは<strong>できない</strong>ようです。今回は日付に関するテストにおいて日付とみなされるパターン（<code>9999-99-99</code>や<code>9999/99/99</code>）が<code>....-..-..</code>に改竄されてしまいテストがまともにできていなかったということがありました。幸い関数の展開結果等のテストしたい部分には該当のパターンが含まれていなかったので出力する内容を変更することで回避できました。</p>
+
+<h3>pdfTeXのテストで非ASCII文字</h3>
+
+<p>l3buildのデフォルト設定ではpdfTeXで非ASCII文字をログに出力すると<code>^^ab</code>のような形式で出力されます。UTF-8入力でログ出力もUTF-8にしたい場合はbuild.luaで以下のような設定を行います。</p>
+
+<pre>
+asciiengines = {}
+</pre>
+
+<h3>dtxでCJKutf8パッケージを使うとエラー</h3>
+
+<p>pdfLaTeXでちょっとだけ日本語したい場合<a href="https://qiita.com/zr_tex8r/items/cdaac1500718eb9fa330">CJKutf8パッケージを使う</a>ことがありますが、これをdtxファイルで使おうとするとよくわからない謎のエラーが発生します。これは<code>\begin{CJK}</code>の実行時にファイルを読み込んでいるのですが、dtxファイルでは<code>%</code>のカテゴリコードが変更されているため、読み込んだファイルのコメント部分でエラーになってしまうためです。そこで以下のような命令を定義することにしました。</p>
+
+<pre>
+\newcommand*{\Ja}[1]{%
+  \bgroup
+    \catcode`\%=14
+    \begin{CJK}{UTF8}{ipxm}#1\end{CJK}%
+  \egroup}
+</pre>
+
+<h2>おわりに</h2>
+
+<p>expl3で旧暦するパッケージを作ってみました。</p>
+
+<p>「LaTeXでアレをするパッケージってないんだ」というのがあって、「プログラミングちょっとできる」という人は、ぜひTeX言語でもexpl3でも（Luaでも？）好きな言語でLaTeXパッケージを作ってみましょう。</p>
+
+</main>
+
+<footer>
+  <p>&copy; 2022 h20y6m</p>
+</footer>
+
+</body>
+
+</html>
