@@ -17,13 +17,13 @@
 <main>
 
 <div>
-  <p>2022年12月02日</p>
+  <p>2022年12月02日　最終更新：2022年12月04日</p>
 </div>
 
 <h1>LaTeXで旧暦してみる</h1>
 
 <blockquote>
-  <p>これは「<a href="https://adventar.org/calendars/7868">TeX ＆ LaTeX Advent Calendar 2022</a>」の2日目の記事です。<br>（1日目は <a href="https://qiita.com/zr_tex8r/items/0cc96144dd46c212a989">zr_tex8r さん</a>、3日目は <a href="https://adventar.org/calendars/7868">hid_alma1026 さん</a>です。）</p>
+  <p>これは「<a href="https://adventar.org/calendars/7868">TeX ＆ LaTeX Advent Calendar 2022</a>」の2日目の記事です。<br>（1日目は <a href="https://qiita.com/zr_tex8r/items/0cc96144dd46c212a989" title="TeX言語でドドスコ（ラブ注入）してみた話 - Qiita">zr_tex8r さん</a>、3日目は <a href="https://zenn.dev/hidaruma/scraps/627cb975b9a677" title="TeX by Topic by Comic challenge">hid_alma1026 さん</a>です。）</p>
 </blockquote>
 
 <h2>LaTeXで和暦してみる</h2>
@@ -79,7 +79,7 @@
 
 <p>……あれ？</p>
 
-<p>なぜか西暦になってしまいました。どうしてでしょうか？　とりあえず<a href="http://mirrors.ctan.org/language/japanese/BX/bxwareki/bxwareki.pdf">bxwarekiパッケージのドキュメント</a>（なぜか英語しかない）を読んでみましょう。「1 Overview」に何やら注意事項が書かれています。</p>
+<p>なぜか西暦になってしまいました。どうしてでしょうか？　とりあえず<a href="http://mirrors.ctan.org/language/japanese/BX/bxwareki/bxwareki.pdf">bxwarekiパッケージのドキュメント</a>（なぜか英語しかない）を読んでみましょう。「<span lang="en">1 Overview</span>」に何やら注意事項が書かれています。</p>
 
 <blockquote>
   <p lang="en">Note that the package only deals with dates in the year 1873 or later, ...</p>
@@ -190,7 +190,7 @@ l3build install --full
 
 <h3>l3buildはテストログを改竄する</h3>
 
-<p>l3buildのテストではログファイルからテストと無関係な部分を削除してくれますが、これ以外にもログを改竄することがあります。どのようなものが書き換えられるのかは<a href="http://mirrors.ctan.org/macros/latex/contrib/l3build/l3build.pdf">l3buildのドキュメント</a>の「1.12 Output normalisation」に書かれています。この挙動はbuild.luaの設定等で無効にすることは<strong>できない</strong>ようです。今回は日付に関するテストにおいて日付とみなされるパターン（<code>9999-99-99</code>や<code>9999/99/99</code>）が<code>....-..-..</code>に改竄されてしまいテストがまともにできていなかったということがありました。幸い関数の展開結果等のテストしたい部分には該当のパターンが含まれていなかったので出力する内容を変更することで回避できました。</p>
+<p>l3buildのテストではログファイルからテストと無関係な部分を削除してくれますが、これ以外にもログを改竄することがあります。どのようなものが書き換えられるのかは<a href="http://mirrors.ctan.org/macros/latex/contrib/l3build/l3build.pdf">l3buildのドキュメント</a>の「<span lang="en">1.12 Output normalisation</span>」に書かれています。この挙動はbuild.luaの設定等で無効にすることは<strong>できない</strong>ようです。今回は日付に関するテストにおいて日付とみなされるパターン（<code>9999-99-99</code>や<code>9999/99/99</code>）が<code>....-..-..</code>に改竄されてしまいテストがまともにできていなかったということがありました。幸い関数の展開結果等のテストしたい部分には該当のパターンが含まれていなかったので出力する内容を変更することで回避できました。</p>
 
 <h3>pdfTeXのテストで非ASCII文字</h3>
 
