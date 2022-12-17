@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>(u)pLaTeXでもっと和文多書体する話 - h20y6m.github.io</title>
+  <meta name="description" content="これは「TeX ＆ LaTeX Advent Calendar 2022」の15日目の記事です。この記事では(u)pTeXエンジンを改造して(u)pLaTeXでたくさん和文書体を使えるようにしてみます。">
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+<header>
+  <p><a href="/">h20y6m.github.io</a></p>
+</header>
+
+<main>
+
+<div>
+  <p>2022年12月17日</p>
+</div>
+
+<h1>(u)pLaTeXでもっと和文多書体する話</h1>
+
+<blockquote>
+  <p>これは「<a href="https://adventar.org/calendars/7868">TeX ＆ LaTeX Advent Calendar 2022</a>」の15日目の記事です。<br>（14日目は <a href="https://qiita.com/yi_chemist/items/c4f5f8cc32e5b802a091" title="Markdown中の下付き文字をPandocでWord/LaTeX出力する際にLuaフィルターで処理してみる - Qiita">yi_chemist さん</a>、16日目は <a href="https://twitter.com/zr_tex8r/status/1603520887730290688" title="ZR🙃的TeXまめちしき / Twitter">zr_tex8r さん</a>です。）</p>
+</blockquote>
+
+<p><a href="https://adventar.org/calendars/7868">TeX ＆ LaTeX Advent Calendar 2022</a>の15日目が埋まっていなかったので（<a href="https://github.com/texjporg/tex-jp-build/issues/150" title="[npTeX] 欧文トークンに似せたCJKトークン · Issue #150 · texjporg/tex-jp-build · GitHub">npｱﾚの話</a>が出てきたのでボツにした）くだらない(u)pTeX改造ネタで埋めておきます。</p>
+
+<h2>(u)pLaTeXで和文多書体</h2>
+
+<p>(u)pLaTeXで多書体化と言えば<a href="https://www.ctan.org/pkg/japanese-otf">otfパッケージ</a>のdeluxeオプションですが、これで使えるようになるのはたったの3書体7ウェイトです。</p>
+
+<p>もっと使える書体を増やしたいときはdoraTeXさんの「<a href="https://doratex.hatenablog.jp/entry/20161206/1480950097">(u)pTeX における和文多書体の実現 〜Sierraの全和文フォント出力を例として〜</a>」のようにTFM/VFを複製する方法があります。使いたい書体の数だけTFM/VFを複製して増やす必要があります。</p>
+
+<p>しかし、「複製」というようにこのTFMは完全に同一ですし、VFも参照TFM名だけが違うだけで実質的に中身は同じです。同じものをたくさん複製するのはなんだかとっても資源の無駄使いに感じてしまします。</p>
+
+<p>しかしこれは書体を増やすにはTFMを増やすしかないという(u)pTeXエンジンの制約なのでどうしようもありません……。</p>
+
+<h2>(u)pTeXでもっと和文多書体</h2>
+
+<p>エンジンの制約なら仕方ありません……。エンジンを改造することにしましょう！（えっ⁉）</p>
+
+<p>まずTFMのほうは(u)pTeXで<code>hoge:piyo</code>と指定した場合は<code>hoge</code>とは異なるフォントとして扱いながら<code>hoge.tfm</code>を参照することにします。</p>
+
+<p>それからDVIファイルにも<code>hoge:piyo</code>というファイル名で書き出されるので、DVIウェアでも同様に<code>hoge:piyo</code>というフォント名の時に<code>hoge.tfm</code>を参照するようにします。またVFについても<code>hoge.vf</code>を参照することします。</p>
+
+<p>さらに<code>hoge.vf</code>が<code>fuga</code>を参照していた場合は、<code>hoge:piyo</code>として参照されたときは<code>fuga:piyo</code>に読み替えることにします。</p>
+
+<p>さいごにフォントマップに<code>fuga:piyo H piyo.ttf</code>のような定義があれば実フォントとして<code>piyo.ttf</code>が使われるという構想です。</p>
+
+<p>（(u)pTeX改造ネタなのにDVIウェアのほうが改造量が多い気がする……）</p>
+
+<h2>やってみた</h2>
+
+<p>というわけで、やってみました。</p>
+
+<p><a href="https://github.com/h20y6m/tex-jp-build/tree/texadvent2022_2">GitHub - h20y6m/tex-jp-build at texadvent2022_2</a></p>
+
+<p>（ん？　dvips？　知らないですねぇ……）</p>
+
+<p>こんな感じでLaTeXのソースコードから好きなだけフォントを使えます。</p>
+
+<pre>
+\documentclass[uplatex,dvipdfmx]{jlreq}
+\usepackage{jlreq-deluxe}
+
+\newcommand{\jlreqtfmprefix}{u}
+\NewDocumentCommand \NewJaFont { m m m }
+  {%
+    \DeclareFontFamily{JY2}{#1}{}%
+    \DeclareFontFamily{JT2}{#1}{}%
+    \DeclareFontShape{JY2}{#1}{#2}{n}{&lt;-&gt;s*[1]\jlreqtfmprefix jlreq:#1-#2}{}%
+    \DeclareFontShape{JT2}{#1}{#2}{n}{&lt;-&gt;s*[1]\jlreqtfmprefix jlreq-v:#1-#2}{}%
+    \AtBeginDvi{%
+      \special{pdf:mapline uprml-h:#1-#2  UniJIS2004-UTF16-H #3}%
+      \special{pdf:mapline uprml-hq:#1-#2 UniJIS-UCS2-H      #3}%
+      \special{pdf:mapline uprml-v:#1-#2  UniJIS2004-UTF16-V #3}%
+    }%
+  }
+\NewJaFont{kyo}{m}{:0:UDDigiKyokashoN-R.ttc}
+\NewJaFont{kyo}{b}{:0:UDDigiKyokashoN-B.ttc}
+\NewJaFont{mei}{m}{:0:meiryo.ttc}
+\NewJaFont{mei}{b}{:0:meiryob.ttc}
+\NewJaFont{yum}{l}{yuminl.ttf}
+\NewJaFont{yum}{m}{yumin.ttf}
+\NewJaFont{yum}{b}{yumindb.ttf}
+\NewJaFont{yug}{l}{:0:YuGothL.ttc}
+\NewJaFont{yug}{m}{:0:YuGothM.ttc}
+\NewJaFont{yug}{b}{:0:YuGothB.ttc}
+\NewJaFont{msm}{m}{:0:msmincho.ttc}
+\NewJaFont{msg}{m}{:0:msgothic.ttc}
+\NewJaFont{bizm}{m}{:0:BIZ-UDMinchoM.ttc}
+\NewJaFont{bizg}{m}{:0:BIZ-UDGothicR.ttc}
+\NewJaFont{bizg}{b}{:0:BIZ-UDGothicB.ttc}
+\NewDocumentCommand \kyofamily {} {\kanjifamily{kyo}\selectfont}
+\NewDocumentCommand \meifamily {} {\kanjifamily{mei}\selectfont}
+\NewDocumentCommand \yumfamily {} {\kanjifamily{yum}\selectfont}
+\NewDocumentCommand \yugfamily {} {\kanjifamily{yug}\selectfont}
+\NewDocumentCommand \msmfamily {} {\kanjifamily{msm}\selectfont}
+\NewDocumentCommand \msgfamily {} {\kanjifamily{msg}\selectfont}
+\NewDocumentCommand \bizmfamily{} {\kanjifamily{bizm}\selectfont}
+\NewDocumentCommand \bizgfamily{} {\kanjifamily{bizg}\selectfont}
+
+\begin{document}
+{\mcfamily 吾輩は☃である。\bfseries 吾輩は☃である。\ltseries 吾輩は☃である。}\par
+{\gtfamily 吾輩は☃である。\bfseries 吾輩は☃である。\ebseries 吾輩は☃である。}\par
+{\kyofamily 吾輩は☃である。\bfseries 吾輩は☃である。}\par
+{\meifamily 吾輩は☃である。\bfseries 吾輩は☃である。}\par
+{\yumfamily 吾輩は☃である。\bfseries 吾輩は☃である。\ltseries 吾輩は☃である。}\par
+{\yugfamily 吾輩は☃である。\bfseries 吾輩は☃である。\ltseries 吾輩は☃である。}\par
+{\msmfamily 吾輩は☃である。\msgfamily 吾輩は☃である。}\par
+{\bizmfamily 吾輩は☃である。\bizgfamily 吾輩は☃である。\bfseries 吾輩は☃である。}\par
+\end{document}
+</pre>
+
+<p><img alt="出力サンプル" src="image.png"></p>
+
+<h2>まとめ</h2>
+
+<p>WEB言語とか（C言語とか）しましょう！</p>
+
+</main>
+
+<footer>
+  <p>&copy; 2022 h20y6m</p>
+</footer>
+
+</body>
+
+</html>

@@ -50,3 +50,7 @@ th, td {
 tr:nth-child(2n) {
   background: whitesmoke;
 }
+img {
+  max-width: 100%;
+  border: 1px solid lightgray;
+}
