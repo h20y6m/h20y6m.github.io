@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>和文VFで異体字する話 - h20y6m.github.io</title>
+  <meta name="description" content="これは「TeX ＆ LaTeX Advent Calendar 2023」の2日目の記事です。この記事ではカスタム和文VFを作成して異体字を出力する方法を紹介します。">
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+<header>
+  <p><a href="/">h20y6m.github.io</a></p>
+</header>
+
+<main>
+
+<div>
+  <p>2023年12月02日</p>
+</div>
+
+<h1>和文VFで異体字する話</h1>
+
+<blockquote>
+  <p>これは「<a href="https://adventar.org/calendars/9305">TeX ＆ LaTeX Advent Calendar 2023</a>」の2日目の記事です。<br>（1日目は <a href="https://adventar.org/calendars/9305" title="TeX ＆ LaTeX Advent Calendar 2023">zr_tex8r さん</a>、3日目は <a href="https://adventar.org/calendars/9305" title="TeX ＆ LaTeX Advent Calendar 2023">uwabami さん</a>です。）</p>
+</blockquote>
+
+<p>この記事ではカスタム和文VFを作成して異体字を出力する方法を紹介します。</p>
+
+<p>この記事では前提として最新のTeX Live 2023を利用し、upLaTeXとDVIPDFMxでPDFを作成していることを想定しています。</p>
+
+<h2>upLaTeXで異体字する話</h2>
+
+<p>古い作品をupLaTeXで再現しようとしたとき、字体もなるべく似せようと異体字を使いたくなることがみなさんもよくあるかと思います。例えば、以下の日本語LaTeXユーザーにはおなじみの作品</p>
+
+<ul>
+  <li>夏目漱石 著『吾輩ハ猫デアル』上,大倉書店,明治38. 国立国会図書館デジタルコレクション <a href="https://dl.ndl.go.jp/pid/13046229">https://dl.ndl.go.jp/pid/13046229</a> (参照 2023-12-02)</li>
+</ul>
+
+<p>では「名前」の「前」の「月」部分が横棒ではなく点になっています。また「記憶」の「記」の旁も見慣れたものとは少し違っていますね。</p>
+
+<p>（まぁ、この作品の組版をupLaTeXで再現しようとすると異体字よりももっと大変そうなことがあるわけですが……）</p>
+
+<h3>Adobe-Japan1</h3>
+
+<p>使いたい異体字が<a href="https://github.com/adobe-type-tools/Adobe-Japan1/blob/master/README-JP.md">Adobe-Japan1</a>に含まれている場合は、<a href="https://www.ctan.org/pkg/japanese-otf">otfパッケージ</a>の<code>\CID</code>命令を使用して簡単に出力できます。otfパッケージはTeX Liveに含まれていて、さらにTeX Live 2020以降はAdobe-Japan1の全漢字を収録した<a href="https://www.ctan.org/pkg/haranoaji">原ノ味フォント</a>がデフォルトの和文フォントになっているため、最新のTeX Liveをインストールするだけで最初から使える状態になっています。</p>
+
+<p><code>\CID</code>命令を使うためには、当然ながら異体字のCIDを探す必要があります。例えば、以下のWebページで「前」を検索すると「月」の横棒が点になっている異体字がCID+13889だとわかります。</p>
+
+<ul>
+  <li><a href="https://wakufactory.jp/densho/font/ivs_aj.html">AdobeJapan1 IVS異体字一覧</a></li>
+</ul>
+
+<h3>IPAmj明朝フォント</h3>
+
+<p>Adobe-Japan1の異体字では足りない場合は、<a href="https://moji.or.jp/mojikiban/font/">IPAmj明朝フォント</a>の異体字を使う方法があります。<a href="http://psitau.kitunebi.com/experiment.html">ipamjmパッケージ</a>の<code>\MJMZM</code>命令を使うと、upLaTeXでIPAmj明朝フォントの異体字を使うことができます。TeX Liveには含まれていないため、自分でインストールする必要があったり、明朝体1ウェイトだけでゴシック体などはありませんが、たくさんの異体字が使えるようになります。</p>
+
+<p>なお、ipamjmパッケージ（2020/01/09 v0.5）はLaTeX 2021-06-01以降のバージョンでは動かないため修正する<a href="https://gist.github.com/h20y6m/f51942719b0f770e1970220de89ce42b">パッチ</a>を作ってみました。</p>
+
+<p><code>\MJMZM</code>命令を使うためには、MJ文字図形名の番号部分を知る必要があります。以下のWebサイトで検索することができます。例えば、「記」を検索すると目的の異体字がMJ024358だとわかります。</p>
+
+<ul>
+  <li><a href="https://moji.or.jp/mojikibansearch/basic">文字情報基盤検索システム</a></li>
+</ul>
+
+<p>なお、IPAmj明朝の異体字（UCS符号に対するデフォルトグリフではないグリフ）をdvipdfmxで使用すると、該当の文字がPDFのToUnicode CMapに入りません。このためPDF上で該当の文字をコピーしたり検索したりすることができません。また、IPAmj明朝で使用している文字が全てこのような文字だった場合は、</p>
+
+<pre>
+dvipdfmx:warning: Creating ToUnicode CMap failed for "ipamjm.ttf"
+dvipdfmx:warning: Failed to load ToUnicode CMap for font "ipamjm.ttf"
+</pre>
+
+<p>のような警告がでてPDFにToUnicode CMapそのものが埋め込まれません。PDF/Aのような規格ではToUnicode CMapの埋め込みが必須になっていたりしますので、ipamjmパッケージを使用するとこのような規格に準拠できなくなる可能性があるので注意してください。</p>
+
+<h3>otfパッケージとipamjmパッケージで異体字するサンプル</h3>
+
+<p>otfパッケージとipamjmパッケージで先ほどの『吾輩ハ猫デアル』を組んでみます。文書クラスとして<a href="https://www.ctan.org/pkg/jlreq">jlreqクラス</a>を使いたいと思うのでotfパッケージを直接使わずに<a href="https://www.ctan.org/pkg/jlreq-deluxe">jlreq-deluxeパッケージ</a>を使い、ipamjmパッケージにscaleオプションを付けます。（<code>a6paper</code>と<code>landscape</code>は紙面の都合です。）</p>
+
+<pre>
+\documentclass[uplatex,dvipdfmx,a6paper,tate,landscape]{jlreq}
+\usepackage{bxpapersize}
+\usepackage{jlreq-deluxe}
+\usepackage[scale=1]{ipamjm}
+\begin{document}
+吾輩は猫である。名\CID{13889}はまだ無い。
+
+どこで生まれたのか頓と見當がつかぬ。
+何ても\CID{13638}\CID{13977}いじめじめした\CID{13826}で
+ニャー〳〵泣いて居た事\CID{13463}は\MJMZM{24358}\MJMZM{11957}している。
+\end{document}
+</pre>
+
+<p>結果は以下のようになります。</p>
+
+<p><img alt="吾輩は猫である" src="image1.png"></p>
+
+<h2>和文VFで異体字する話</h2>
+
+<p>前述のような方法で異体字を使うことができますが、異体字が増えてくると、</p>
+
+<ul>
+  <li>異体字にしたい文字が出てくる毎に<code>\CID</code>や<code>\MJMZM</code>命令を使用する必要があり、手間がかかる。</li>
+  <li>ソースコードが<code>\CID</code>や<code>\MJMZM</code>命令だらけになり、読みづらくなる。</li>
+</ul>
+
+<p>などいろいろつらくなってきます。</p>
+
+<p>そこで独自の和文VF（Virtual Font）を作ってソースコードではフツーの文字を入力しても、生成されるPDFでは異体字が出力されるようにしてみたいと思います。</p>
+
+<p>和文VFのカスタマイズについては以下のWebページに詳しい解説があります。</p>
+
+<ul>
+  <li><a href="https://zrbabbler.hatenablog.com/entry/2019/03/03/234646">jfmutilで和文VFをカスタマイズする話(1) - マクロツイーター</a></li>
+</ul>
+
+<p>先きほどのサンプルではjlreq-deluxeパッケージを使用しているため、本文の和文フォントはjlreq--upnmlminrn-vです。上記のページではZVP形式を使っていますが、jlreq-deluxeの和文VFはZVP形式では扱えないため、ZVP0形式を使うことにします。今回はwagahai-minr-vという名前で和文フォントを作成することにします。「minr」は明朝Regular、「v」は縦組み用を表します。</p>
+
+<p>ZVP形式ではVFに対応するJFMも一緒に扱えますが、ZVP0形式はそうではないため、JFMは別に準備する必要があります。JFMは元のJFMと全く同じもので良いため、単純にコピーするだけです。</p>
+
+<pre>
+$ cp $TEXMFDIST/fonts/tfm/public/jlreq-deluxe/jlreq--upnmlminrn-v.tfm wagahai-minr-v.tfm
+</pre>
+
+<p>元になるjlreq--upnmlminrn-vのVFをjfmutilでZVP0形式に変換し名前をwagahai-minr-v.zvp0に変更します。</p>
+
+<pre>
+$ jfmutil vf2zvp0 jlreq--upnmlminrn-v
+$ mv jlreq--upnmlminrn-v.zvp0 wagahai-minr-v.zvp0
+</pre>
+
+<p>wagahai-minr-v.zvp0を編集していきます。まず、Adobe-Japan1の異体字を使いたいため、otfパッケージの<code>\CID</code>命令用のフォントotf-cjmr-vを追加します。「mr」は明朝Regular、「v」は縦組み用を表します。</p>
+
+<p>（実際には<code>\CID</code>命令はotf-cjmr-vを直接使うのではなく分割・コード変換をしたVFを経由しています。文字コードをpTeXが扱えるJIS漢字の範囲に収めるための工夫のようです。）</p>
+
+<p>jlreq--upnmlminrn-vはフォントを1つしか使っていないため、フォント番号1にotf-cjmr-vを割り当てることにします。他の<code>MAPFONT</code>の続きに以下を追記します。</p>
+
+<pre>
+(MAPFONT D 1
+   (FONTNAME otf-cjmr-v)
+   (FONTCHECKSUM O 0)
+   (FONTAT R 1.0)
+   (FONTDSIZE R 10.0)
+   )
+</pre>
+
+<p>異体字にしたい文字ごとに<code>CHARACTER</code>を定義していきます。<code>CHARACTER</code>は文字コード順になるようにします。例えば「前」（U+524D）をCID+13889（16進で3641）をマップするには以下のような定義を書きます。（ZVP形式の場合は<code>CHARWD</code>は省略できます。）</p>
+
+<pre>
+(CHARACTER H 524D
+   (CHARWD R 1.0)
+   (MAP
+      (SELECTFONT D 1)
+      (SETCHAR H 3641)
+      )
+   )
+</pre>
+
+<p>次にIPAmj明朝の異体字を使えるようにしていきます。IPAmj明朝ではAdobe-Japan1フォントでCIDを指定するようにMJ番号で指定することができません。GIDに変換してやる必要があります。もちろんipamjmパッケージはMJ番号からIPAmj明朝フォントのGIDに変換しているのですが、そのためのVFはpTeXのサポートするJIS漢字コードの範囲に収めるために分割されていたり、文字コード変換をしていたりしてややこしくなっています。</p>
+
+<p>そこで今回は<a href="https://gist.github.com/h20y6m/2dbeb4c901385443b7e06f6927a9c432">MJ番号からIPAmj明朝のGIDに変換するVFを作成するためのスクリプト</a>を作成し、このスクリプトで作ったipamjmm--vを使うことにします。</p>
+
+<p>ipamjmm--vをフォント番号2で追加します。</p>
+
+<pre>
+(MAPFONT D 2
+   (FONTNAME ipamjmm--v)
+   (FONTCHECKSUM O 0)
+   (FONTAT R 1.0)
+   (FONTDSIZE R 10.0)
+   )
+</pre>
+
+<p>例えば「記」（U+8A18）をMJ024358（16進で5F26）にマップするには以下のような定義を書きます。</p>
+
+<pre>
+(CHARACTER H 8A18
+   (CHARWD R 1.0)
+   (MAP
+      (SELECTFONT D 2)
+      (SETCHAR H 5F26)
+      )
+   )
+</pre>
+
+<p>ZVP0ファイルの編集が終わったらjfmutilのzvp02vfコマンドでVFに変換します。</p>
+
+<pre>
+$ jfmutil zvp02vf wagahai-minr-v
+</pre>
+
+<h3>VFで異体字するサンプル</h3>
+
+<p>作成したVFで『吾輩ハ猫デアル』を組んでみます。</p>
+
+<ul>
+  <li>upLaTeXで縦組みなので和文エンコーディングは「JT2」、</li>
+  <li>jlreq-deluxe（内部的にotf）パッケージを使っているので和文フォントファミリーは「hmc」、</li>
+  <li>jlreqクラスでフォントサイズオプションを使っていないので和文スケールは「1」です。</li>
+</ul>
+
+<pre>
+\documentclass[uplatex,dvipdfmx,a6paper,tate,landscape]{jlreq}
+\usepackage{bxpapersize}
+\usepackage{jlreq-deluxe}
+\makeatletter
+\expandafter\let\csname JT2/hmc/m/n/10\endcsname\relax
+\DeclareFontShape{JT2}{hmc}{m}{n}{&lt;-&gt;s*[1]wagahai-minr-v}{}
+\makeatother
+\begin{document}
+吾輩は猫である。名前はまだ無い。
+
+どこで生まれたのか頓と見當がつかぬ。
+何ても暗薄いじめじめした所で
+ニャー〳〵泣いて居た事丈は記憶している。
+\end{document}
+</pre>
+
+<p>結果は先ほどのサンプルと同じになるはずです。</p>
+
+<h2>LuaLaTeXで幸せになる？</h2>
+
+<p>この記事で登場したAdobe-Japan1やIPAmj明朝フォントに収録されているMoji_Johoの異体字は国際的なデータベースのUnicode IVDに登録されており、UnicodeのIVSという仕組みを使って表現することができます。</p>
+
+<p>LuaLaTeXはこのIVSに対応しているためフォントがサポートしていれば特別な命令を使うことなく異体字を利用できます。LuaTeX-jaのデフォルトの和文フォントはAdobe-Japan1の漢字を全てサポートしている原ノ味フォントですから、デフォルトの状態でAdobe-Japan1の異体字を全て使うことができます。例えば、Adobe-Japan1のCID+13889の「前」はIVSを使って「前󠄁」（U+524D U+E0101）と表現できます。</p>
+
+<p>一方MJの異体字は原ノ味フォントではサポートされていないのでそのままでは使えませんが、LuaLaTeXでは簡単にフォントを変更できるのでその部分だけフォントをIPAmj明朝に切り替えることで簡単にMJの異体字を使うことができます。（もしかしたら、“最強”のLuaLaTeXならその部分だけ自動的にフォントを変更する方法があるかもしれません。）</p>
+
+<pre>
+\documentclass[lualatex,a6paper,tate,landscape]{jlreq}
+\usepackage{luatexja-fontspec}
+\newjfontfamily{\ipamjmfamily}[
+  YokoFeatures={JFM=jlreq},
+  TateFeatures={JFM=jlreqv},
+]{IPAmjMincho}
+\NewDocumentCommand \MJ { m } {{\ipamjmfamily #1}}
+\begin{document}
+吾輩は猫である。名前󠄁はまだ無い。
+
+どこで生まれたのか頓と見當がつかぬ。
+何ても暗󠄁薄󠄁いじめじめした所󠄁で
+ニャー〳〵泣いて居た事丈󠄁は\MJ{記󠄂憶󠄂}している。
+\end{document}
+</pre>
+
+<p>こちらも最初のサンプルとほぼ同じになるはずです。</p>
+
+<p>ただし、出力されたPDFではIVSを使った文字部分の文字がToUnicode CMapでU+FFFDにマップされてしまい、文字のコピーや検索ができなくなってしまうようです……（ちょっとざんねん……）</p>
+
+<h2>まとめ</h2>
+
+<p>カスタム和文VFを作成して生成されるPDFの文字を自動的に異体字にすることができます。</p>
+
+<p>また、LuaLaTeXならIVSが使えるのでIVSをサポートしているフォントを利用すれば簡単に異体字を使うことができます。</p>
+
+<p>というわけで、みなさん<s>カスタム和文VFを作って</s>LuaLaTeXで幸せになりましょう！</p>
+
+</main>
+
+<footer>
+  <p>&copy; 2023 h20y6m</p>
+</footer>
+
+</body>
+
+</html>
