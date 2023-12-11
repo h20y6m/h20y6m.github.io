@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>LaTeXでメルセンヌ・ツイスタ - h20y6m.github.io</title>
+  <meta name="description" content="これは「TeX ＆ LaTeX Advent Calendar 2023」の11日目の記事です。この記事ではexpl3でメルセンヌ・ツイスタを実装してみます。">
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+<header>
+  <p><a href="/">h20y6m.github.io</a></p>
+</header>
+
+<main>
+
+<div>
+  <p>2023年12月11日</p>
+</div>
+
+<h1>LaTeXでメルセンヌ・ツイスタ</h1>
+
+<blockquote>
+  <p>これは「<a href="https://adventar.org/calendars/9305">TeX ＆ LaTeX Advent Calendar 2023</a>」の11日目の記事です。<br>（10日目は <a href="https://zenn.dev/hidaruma/articles/a10e5c8b7578c5" title="『［改訂第9版］LaTeX美文書作成入門』の読書感想文">hid_alma1026 さん</a>、12日目は <a href="https://adventar.org/calendars/9305">?? さん</a>です。）</p>
+</blockquote>
+
+<p>この記事ではexpl3でメルセンヌ・ツイスタを実装してみます。</p>
+
+<h2>はじめに</h2>
+
+<p>皆さんもLaTeX文章を書いていたら乱数を使いたくなる、ということはよくあることでしょう。以下のWebページではTeXで乱数を使ういろいろな方法が紹介されています。</p>
+
+<ul>
+  <li><a href="https://doratex.hatenablog.jp/entry/20181219/1545203395">TeX で乱数を使う - TeX Alchemist Online</a></li>
+</ul>
+
+<p>この中でもとくに、高品質な疑似乱数生成アルゴリズムであるメルセンヌ・ツイスタを使いたいと思う人が多いのではないでしょうか。しかし、メルセンヌ・ツイスタを使いたいけど諸般の事情でLuaTeXが使えず、諦めざるを得ないという人ももしかしたらいるかもしれません。</p>
+
+<p>というわけで、expl3でメルセンヌ・ツイスタ（“MT19937”とか呼ばれてるやつ）を実装してみることにします。</p>
+
+<p>（かなり強引な導入）</p>
+
+<h2>expl3でメルセンヌ・ツイスタを実装してみる</h2>
+
+<p>いきなりですが、MT19937の実装には以下の機能が必要になります。</p>
+
+<ul>
+  <li>符号無し32ビット整数</li>
+  <li>ビット単位論理和・論理積・排他的論理和演算</li>
+  <li>ビットシフト演算</li>
+</ul>
+
+<p>これらはいずれもTeXにはありません。</p>
+
+<p>なので作りました。</p>
+
+<ul>
+  <li><a href="https://github.com/h20y6m/latex-biguint">h20y6m/latex-biguint: LaTeX: Big unsigned integer</a></li>
+</ul>
+
+<p>GitでCloneまたはZIPをダウンロードして<code>l3build install --full</code>で$TEXMFHOMEにインストールできます。</p>
+
+<p>これさえあればあとはメルセンヌ・ツイスタのアルゴリズムにしたがって実装するだけです。</p>
+
+<ul>
+  <li><a href="https://en.wikipedia.org/wiki/Mersenne_Twister">Mersenne Twister - Wikipedia</a></li>
+</ul>
+
+<p>出来上がったコードは</p>
+
+<ul>
+  <li><a href="https://gist.github.com/h20y6m/9ce02e903e3aa720fa310f951400c02f">LaTeX: メルセンヌ・ツイスタ · GitHub</a></li>
+</ul>
+
+<p>に置いておきます。</p>
+
+<p>まずはMT19937のパラメータ定数を定義します。</p>
+
+<pre>
+% constant n, m
+\int_const:Nn \c_mt_n_int { 624 }
+\int_const:Nn \c_mt_m_int { 397 }
+% constant a
+\biguint_const:Nn \c_mt_a_biguint { "9908 B0DF }
+% constant u, d
+\biguint_const:Nn \c_mt_u_biguint { 11 }
+\biguint_const:Nn \c_mt_d_biguint { "FFFF FFFF }
+% constant s, b
+\biguint_const:Nn \c_mt_s_biguint { 7 }
+\biguint_const:Nn \c_mt_b_biguint { "9D2C 5680 }
+% constant t, c
+\biguint_const:Nn \c_mt_t_biguint { 15 }
+\biguint_const:Nn \c_mt_c_biguint { "EFC6 0000 }
+% constant l
+\biguint_const:Nn \c_mt_l_biguint { 18 }
+% constant f
+\biguint_const:Nn \c_mt_f_biguint { 1812433253 }
+</pre>
+
+<p>つぎに変数を定義します。</p>
+
+<pre>
+% state MT[0..(n-1)]
+\int_step_inline:nnn { 0 } { \c_mt_n_int - 1 }
+  { \biguint_new:c { g_mt_MT[ #1 ]_biguint } }
+% index
+\int_new:N \g_mt_index_int
+\int_gset:Nn \g_mt_index_int { \c_mt_n_int + 1}
+</pre>
+
+<p>それから生成した乱数を返すための変数です。</p>
+
+<pre>
+\biguint_new:N \g_mt_result_biguint
+</pre>
+
+<p>そのほか実装で使用する定数です。</p>
+
+<pre>
+\biguint_const:Nn \c_mt_lower_mask_biguint { "7FFF FFFF }
+\biguint_const:Nn \c_mt_upper_mask_biguint { "8000 0000 }
+\biguint_const:Nn \c_mt_wbits_mask_biguint { "FFFF FFFF }
+\biguint_const:Ne \c_mt_w_minus_two_biguint { \int_eval:n { 32 - 2 } }
+</pre>
+
+<p>使用する一時変数です。</p>
+
+<pre>
+\biguint_new:N \l__mt_tempa_biguint
+\biguint_new:N \l__mt_tempb_biguint
+\biguint_new:N \l__mt_y_biguint
+\biguint_new:N \l__mt_x_biguint
+\biguint_new:N \l__mt_xA_biguint
+</pre>
+
+<p>使用する関数の変種を生成しておきます。</p>
+
+<pre>
+\cs_generate_variant:Nn \biguint_shr:NNN { NcN }
+\cs_generate_variant:Nn \biguint_bitand:NNN { NcN }
+\cs_generate_variant:Nn \biguint_gbitand:NNN { cNN }
+\cs_generate_variant:Nn \biguint_bitxor:NNN { NcN }
+\cs_generate_variant:Nn \biguint_gbitxor:NNN { ccN }
+</pre>
+
+<p>エラーメッセージを定義します。</p>
+
+<pre>
+\msg_new:nnn { mt } { never-seeded }
+  { Generator~was~never~seeded. }
+</pre>
+
+<p>シードを設定するための<code>\mt_seed_mt:n</code>関数を定義します。</p>
+
+<p>expl3の<code>\int_step_inline:nnn</code>を使ってループしていますが、関数定義内なので<code>#</code>を二重にするのを忘れずに。biguintは今のところbiguint型の変数・定数の演算しかサポートしていないので、演算に使う値は予め定数としてよういしておくか、一時変数にセットする必要があります。</p>
+
+<pre>
+\cs_new_protected:Npn \mt_seed_mt:n #1
+  {
+    \int_gset_eq:NN \g_mt_index_int \c_mt_n_int
+    \biguint_gset:cn  { g_mt_MT[ 0 ]_biguint } { #1 }
+    \int_step_inline:nnn { 1 } { \c_mt_n_int - 1 }
+      {
+        % MT[i-1] &gt;&gt; (w - 2)
+        \biguint_shr:NcN
+          \l__mt_tempa_biguint
+          { g_mt_MT[ \int_eval:n { ##1 - 1 } ]_biguint }
+          \c_mt_w_minus_two_biguint
+        % MT[i-1] xor (...)
+        \biguint_bitxor:NcN
+          \l__mt_tempa_biguint
+          { g_mt_MT[ \int_eval:n { ##1 - 1 } ]_biguint }
+          \l__mt_tempa_biguint
+        % f * (...)
+        \biguint_mul:NNN
+          \l__mt_tempa_biguint
+          \c_mt_f_biguint
+          \l__mt_tempa_biguint
+        % ... + i
+        \biguint_set:Nn \l__mt_tempb_biguint { ##1 }
+        \biguint_add:NNN
+          \l__mt_tempa_biguint
+          \l__mt_tempa_biguint
+          \l__mt_tempb_biguint
+        % MT[i] := lowest w bits of ...
+        \biguint_gbitand:cNN
+          { g_mt_MT[ ##1 ]_biguint }
+          \l__mt_tempa_biguint
+          \c_mt_wbits_mask_biguint
+      }
+  }
+</pre>
+
+<p>乱数を生成する関数を定義します。結果はグローバル変数<code>\g_mt_result_biguint</code>にセットされます。</p>
+
+<p><code>% if index &gt;= n</code>の所で<code>&gt;=</code>ではなく<code>&lt;</code>にしてFALSE節を使っています。<code>\int_compare:nNn(TF)</code>では<code>&gt;=</code>が使えません、<code>\int_compare:nT</code>を使えば<code>>=</code>を使えますが少し遅くなります。</p>
+
+<p><code>c</code>変種で名前を作るときにint型の変数を使っています。int型の変数は展開可能ではないので<code>\int_use:N</code>などを忘れないようにしましょう。</p>
+
+<pre>
+\cs_new_protected:Npn \mt_extract_number:
+  {
+    % if index &gt;= n
+    \int_compare:nNnF { \g_mt_index_int } &lt; { \c_mt_n_int }
+      {
+        \int_compare:nNnT { \g_mt_index_int } &gt; { \c_mt_n_int }
+          {
+            \msg_error:nn { mt } { never-seeded }
+          }
+        \mt_twist:
+      }
+    % y := MT[index]
+    \biguint_set_eq:Nc
+      \l__mt_y_biguint
+      { g_mt_MT[ \int_use:N \g_mt_index_int ]_biguint }
+    % y := y xor ((y &gt;&gt; u) and d)
+    \biguint_shr:NNN
+      \l__mt_tempa_biguint \l__mt_y_biguint \c_mt_u_biguint
+    \biguint_bitand:NNN
+      \l__mt_tempa_biguint \l__mt_tempa_biguint \c_mt_d_biguint
+    \biguint_bitxor:NN
+      \l__mt_y_biguint \l__mt_tempa_biguint
+    % y := y xor ((y &lt;&lt; s) and b)
+    \biguint_shl:NNN
+      \l__mt_tempa_biguint \l__mt_y_biguint \c_mt_s_biguint
+    \biguint_bitand:NNN
+      \l__mt_tempa_biguint \l__mt_tempa_biguint \c_mt_b_biguint
+    \biguint_bitxor:NN
+      \l__mt_y_biguint \l__mt_tempa_biguint
+    % y := y xor ((y &lt;&lt; t) and c)
+    \biguint_shl:NNN
+      \l__mt_tempa_biguint \l__mt_y_biguint \c_mt_t_biguint
+    \biguint_bitand:NNN
+      \l__mt_tempa_biguint \l__mt_tempa_biguint \c_mt_c_biguint
+    \biguint_bitxor:NN
+      \l__mt_y_biguint \l__mt_tempa_biguint
+    % y := y xor (y &gt;&gt; l)
+    \biguint_shr:NNN
+      \l__mt_tempa_biguint \l__mt_y_biguint \c_mt_l_biguint
+    \biguint_bitxor:NN
+      \l__mt_y_biguint \l__mt_tempa_biguint
+    % index := index + 1
+    \int_gincr:N \g_mt_index_int
+    % return
+    \biguint_gset_eq:NN
+      \g_mt_result_biguint \l__mt_y_biguint
+  }
+</pre>
+
+<p>メルセンヌ・ツイスタの名前の由来でもある？内部状態を「ツイスト」する関数を定義します。</p>
+
+<p><code>% if (x mod 2) != 0</code>の所はつまりは奇数かどうかの判定なので普通に<code>\biguint_if_odd:NT</code>を使っています。</p>
+
+<pre>
+\cs_new_protected:Npn \mt_twist:
+  {
+    \int_step_inline:nnn { 0 } { \c_mt_n_int - 1 }
+      {
+        % MT[i] and upper_mask
+        \biguint_bitand:NcN
+          \l__mt_x_biguint
+          { g_mt_MT[ ##1 ]_biguint }
+          \c_mt_upper_mask_biguint
+        % MT[(i+1) mod n] and lower_mask
+        \biguint_bitand:NcN
+          \l__mt_tempa_biguint
+          { g_mt_MT[ \int_eval:n { \int_mod:nn { ##1 + 1 } { \c_mt_n_int } } ]_biguint }
+          \c_mt_lower_mask_biguint
+        % x := ... | ...
+        \biguint_bitor:NN \l__mt_x_biguint \l__mt_tempa_biguint
+        % xA := x &gt;&gt; 1
+        \biguint_shr:NNN \l__mt_xA_biguint \l__mt_x_biguint \c_one_biguint
+        % if (x mod 2) != 0
+        \biguint_if_odd:NT \l__mt_x_biguint
+          {
+            % xA := xA xor a
+            \biguint_bitxor:NN \l__mt_xA_biguint \c_mt_a_biguint
+          }
+        % MT[i] := MT[(i + m) mod n] xor xA
+        \biguint_gbitxor:ccN
+          { g_mt_MT[ ##1 ]_biguint }
+          { g_mt_MT[ \int_eval:n { \int_mod:nn { ##1 + \c_mt_m_int } { \c_mt_n_int } } ]_biguint }
+          \l__mt_xA_biguint
+      }
+    % index := 0
+    \int_gzero:N \g_mt_index_int
+  }
+</pre>
+
+<p>デバッグ用に内部状態を出力する関数も用意しておきます。</p>
+
+<pre>
+\cs_new_protected:Npn \mt_show:
+  { \mt__dump:N \tl_show:N }
+\cs_new_protected:Npn \mt_log:
+  { \mt__dump:N \tl_log:N }
+\tl_new:N \l__mt_dump_tl
+\cs_new_protected:Npn \mt__dump:N #1
+  {
+    \tl_clear:N \l__mt_dump_tl
+    \int_step_inline:nnn { 0 } { \c_mt_n_int - 1 }
+      {
+        \tl_put_right:Ne \l__mt_dump_tl
+          { \biguint_to_decimal:c { g_mt_MT[ ##1 ]_biguint } ~ }
+      }
+    \tl_put_right:Ne \l__mt_dump_tl
+      { \int_use:N \g_mt_index_int }
+    #1 \l__mt_dump_tl
+  }
+</pre>
+
+<p>LaTeXから使うための命令を定義しておきます。</p>
+
+<ul>
+  <li><code>\MTseed{〈シード〉}</code>：シードを設定する。〈シード〉は十進表記または<code>"</code>前置の十六進表記</li>
+  <li><code>\MTrand</code>：乱数を生成する。生成乱数は<code>\MTnumber</code>を通して取得する。</li>
+  <li><code>\MTnumber</code>：<code>\MTrand</code>で生成した乱数の十進表記に展開される。（0 ～ 2<sup>32</sup> &minus; 1）</li>
+</ul>
+
+<pre>
+% LaTeX2e interface
+\NewDocumentCommand \MTseed { m }
+  { \mt_seed_mt:n {#1} }
+\NewDocumentCommand \MTrand {}
+  { \mt_extract_number: }
+\NewExpandableDocumentCommand \MTnumber {}
+  { \biguint_to_decimal:N \g_mt_result_biguint }
+</pre>
+
+<ul>
+  <li><a href="https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine">std::mersenne_twister_engine - cppreference.com</a></li>
+</ul>
+
+<p>によると、デフォルトのシード5489のときに10000個目の乱数が4123659995になるみたいなので確かめてみます。</p>
+
+<pre>
+\documentclass[a4paper,twocolumn]{article}
+\ExplSyntaxOn
+% さっきのコード
+\ExplSyntaxOff
+\usepackage{pgffor}
+\begin{document}
+\MTseed{5489}
+\foreach \x in {1,...,10000}
+  {%
+    \MTrand
+    $ [\x] = \MTnumber $%
+    \par
+  }%
+\end{document}
+</pre>
+
+<p>実行してみるとちゃんと10000個目の乱数が4123659995になっているのが確認できます。</p>
+
+<p><img alt="10000個目の乱数が4123659995" src="image.png"></p>
+
+<h2>おわりに</h2>
+
+<p>LuaTeX以外でもメルセンヌ・ツイスタできて幸せ！</p>
+
+<p>LuaTeXなら簡単にメルセンヌ・ツイスタできてもっと幸せ！</p>
+
+<h2>あとがき</h2>
+
+<p>さらっと登場したbiguintパッケージですが、もともと別のネタ用に作っていたものだったのですが、そっちのネタが出来そうにもなくお蔵入りになるはずだったやつです。せっかく作ったのにもったいなかったので簡単に実装できそうなメルセンヌ・ツイスタにしてみました。</p>
+
+<p>皆さんもネタ作りは計画的に！</p>
+
+</main>
+
+<footer>
+  <p>&copy; 2023 h20y6m</p>
+</footer>
+
+</body>
+
+</html>
