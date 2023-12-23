@@ -31,29 +31,24 @@
 
 <p>LaTeXを使って文章を書いていると、時々和暦を出力したくなる、というのはよくあることでしょう。jarticleなどの標準和文文書クラスやjsarticleなどの和文文書クラスでは<code>\和暦</code>命令を使うことで今日の日付（<code>\today</code>）を和暦で出力することが出来るようになります。</p>
 
-<pre>
-\和暦
+<pre><code class="language-tex">\和暦
 \today
-% =&gt; 令和4年12月2日
-</pre>
+% =&gt; 令和4年12月2日</code></pre>
 
 <p>しかし、これら以外の文書クラスや特定の日を出力したいこともあります。そんな時は<a href="https://www.ctan.org/pkg/bxwareki">bxwarekiパッケージ</a>が便利です。クロスエンジンでXeLaTeXやpdfLaTeXでも利用でき（もちろん和文文字を出力するためのパッケージが別途必要）、今日の日付だけでなく指定した日付の和暦を出力することが出来ます。</p>
 
-<pre>
-\warekitoday % 今日の日付
+<pre><code class="language-tex">\warekitoday % 今日の日付
 % =&gt; 令和4年12月2日
 
 \warekisetdate{2022}{12}{25} % 指定の日付
 \warekidate
-% =&gt; 令和4年12月25日
-</pre>
+% =&gt; 令和4年12月25日</code></pre>
 
 <p>過去の元号にも対応しています。</p>
 
 <p>平成も、昭和も、大正も、明治も……</p>
 
-<pre>
-\warekisetdate{2018}{4}{31}
+<pre><code class="language-tex">\warekisetdate{2018}{4}{31}
 \warekidate
 % =&gt; 平成31年4月31日
 
@@ -67,16 +62,13 @@
 
 \warekisetdate{1873}{1}{1}
 \warekidate
-% =&gt; 明治6年1月1日
-</pre>
+% =&gt; 明治6年1月1日</code></pre>
 
 <p>明治も……</p>
 
-<pre>
-\warekisetdate{1872}{12}{31}
+<pre><code class="language-tex">\warekisetdate{1872}{12}{31}
 \warekidate
-% =&gt; 1872年12月31日
-</pre>
+% =&gt; 1872年12月31日</code></pre>
 
 <p>……あれ？</p>
 
@@ -106,32 +98,24 @@
 
 <p>l3buildを使うと簡単にインストールできます。以下のコマンドを実行するとビルドとテストが自動的に行われ、TEXMFHOMEにインストールされます。<code>--full</code>オプションをつけるとドキュメントなども一緒にインストールされます。</p>
 
-<pre>
-l3build install --full
-</pre>
+<pre><code>l3build install --full</code></pre>
 
 <h3>パッケージの読み込み</h3>
 
 <p>通常通り<code>\usepackage</code>で読み込みます。オプションはありません。</p>
 
-<pre>
-\usepackage{bxjakyureki}
-</pre>
+<pre><code class="language-tex">\usepackage{bxjakyureki}</code></pre>
 
 <h3>使い方</h3>
 
 <p><code>\jakyureki</code>命令が使えるようになります。書式は次の通りです。</p>
 
-<pre>
-\jakyureki{&lt;year&gt;}{&lt;month&gt;}{&lt;day&gt;}
-</pre>
+<pre><code class="language-tex">\jakyureki{&lt;year&gt;}{&lt;month&gt;}{&lt;day&gt;}</code></pre>
 
 <p>指定した西暦の日付に対応する和暦の日付に展開されます。</p>
 
-<pre>
-\jakyureki{1872}{12}{31}
-% =&gt; 明治5年12月2日
-</pre>
+<pre><code class="language-tex">\jakyureki{1872}{12}{31}
+% =&gt; 明治5年12月2日</code></pre>
 
 <p>応永元年7月5日（西暦1394年8月2日）から明治5年12月2日（西暦1872年12月31日）までの日付をサポートしています。（それ以前は<a href="https://ja.wikipedia.org/wiki/%E5%8D%97%E5%8C%97%E6%9C%9D%E6%99%82%E4%BB%A3_(%E6%97%A5%E6%9C%AC)">南北朝時代</a>をどうすればいいのか分からなかったので……）</p>
 
@@ -159,17 +143,13 @@ l3build install --full
 
 <p>次にユリウス通日からざっくりと旧暦の年を計算した後、あらかじめ作っておいた旧暦テーブルを参照し旧暦の日付を求めています。旧暦テーブルは以下のように「年（西暦換算）」毎に「1月1日のユリウス通日」「閏月」「閏月の大小」「各月の大小」となっています。</p>
 
-<pre>
-\cs_gset:cpn { g__bajakyureki_kyureki_data_1870 }
-  { { 2404095 } { 10 } { 0 } { 011010101010 } }
-</pre>
+<pre><code class="language-tex">\cs_gset:cpn { g__bajakyureki_kyureki_data_1870 }
+  { { 2404095 } { 10 } { 0 } { 011010101010 } }</code></pre>
 
 <p>さらに年が西暦換算になっているので、またあらかじめ作っておいた元号リストを検索します。元号リストは以下のように改元日の「年（西暦換算）」「閏月フラグ」「月」「日」と「元号」のリストとなっています。</p>
 
-<pre>
-\tl_gput_right:Nn \g__bxjakyureki_gengo_data_tl
-  { { 1868 } { 0 } {  9 } {  8 } { 明治 } \s__bxjakyureki }
-</pre>
+<pre><code class="language-tex">\tl_gput_right:Nn \g__bxjakyureki_gengo_data_tl
+  { { 1868 } { 0 } {  9 } {  8 } { 明治 } \s__bxjakyureki }</code></pre>
 
 <p>あとは必要もないのになぜか（先頭）完全展開可能になるように実装していたり、コードをASCIIのみにするために文字コード列から日本語文字列のトークン列を生成していたりと、ややこしいことをしていますが、そんなことをしなければそこまで難しい処理はないはずです。</p>
 
@@ -197,21 +177,17 @@ l3build install --full
 
 <p>l3buildのデフォルト設定ではpdfTeXで非ASCII文字をログに出力すると<code>^^ab</code>のような形式で出力されます。UTF-8入力でログ出力もUTF-8にしたい場合はbuild.luaで以下のような設定を行います。</p>
 
-<pre>
-asciiengines = {}
-</pre>
+<pre><code>asciiengines = {}</code></pre>
 
 <h3>dtxでCJKutf8パッケージを使うとエラー</h3>
 
 <p>pdfLaTeXでちょっとだけ日本語したい場合<a href="https://qiita.com/zr_tex8r/items/cdaac1500718eb9fa330">CJKutf8パッケージを使う</a>ことがありますが、これをdtxファイルで使おうとするとよくわからない謎のエラーが発生します。これは<code>\begin{CJK}</code>の実行時にファイルを読み込んでいるのですが、dtxファイルでは<code>%</code>のカテゴリコードが変更されているため、読み込んだファイルのコメント部分でエラーになってしまうためです。そこで以下のような命令を定義することにしました。</p>
 
-<pre>
-\newcommand*{\Ja}[1]{%
+<pre><code class="language-tex">\newcommand*{\Ja}[1]{%
   \bgroup
     \catcode`\%=14
     \begin{CJK}{UTF8}{ipxm}#1\end{CJK}%
-  \egroup}
-</pre>
+  \egroup}</code></pre>
 
 <h2>おわりに</h2>
 

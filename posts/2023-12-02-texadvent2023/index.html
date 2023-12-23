@@ -67,10 +67,8 @@
 
 <p>なお、IPAmj明朝の異体字（UCS符号に対するデフォルトグリフではないグリフ）をdvipdfmxで使用すると、該当の文字がPDFのToUnicode CMapに入りません。このためPDF上で該当の文字をコピーしたり検索したりすることができません。また、IPAmj明朝で使用している文字が全てこのような文字だった場合は、</p>
 
-<pre>
-dvipdfmx:warning: Creating ToUnicode CMap failed for "ipamjm.ttf"
-dvipdfmx:warning: Failed to load ToUnicode CMap for font "ipamjm.ttf"
-</pre>
+<pre><code>dvipdfmx:warning: Creating ToUnicode CMap failed for "ipamjm.ttf"
+dvipdfmx:warning: Failed to load ToUnicode CMap for font "ipamjm.ttf"</code></pre>
 
 <p>のような警告がでてPDFにToUnicode CMapそのものが埋め込まれません。PDF/Aのような規格ではToUnicode CMapの埋め込みが必須になっていたりしますので、ipamjmパッケージを使用するとこのような規格に準拠できなくなる可能性があるので注意してください。</p>
 
@@ -78,8 +76,7 @@ dvipdfmx:warning: Failed to load ToUnicode CMap for font "ipamjm.ttf"
 
 <p>otfパッケージとipamjmパッケージで先ほどの『吾輩ハ猫デアル』を組んでみます。文書クラスとして<a href="https://www.ctan.org/pkg/jlreq">jlreqクラス</a>を使いたいと思うのでotfパッケージを直接使わずに<a href="https://www.ctan.org/pkg/jlreq-deluxe">jlreq-deluxeパッケージ</a>を使い、ipamjmパッケージにscaleオプションを付けます。（<code>a6paper</code>と<code>landscape</code>は紙面の都合です。）</p>
 
-<pre>
-\documentclass[uplatex,dvipdfmx,a6paper,tate,landscape]{jlreq}
+<pre><code class="language-tex">\documentclass[uplatex,dvipdfmx,a6paper,tate,landscape]{jlreq}
 \usepackage{bxpapersize}
 \usepackage{jlreq-deluxe}
 \usepackage[scale=1]{ipamjm}
@@ -89,8 +86,7 @@ dvipdfmx:warning: Failed to load ToUnicode CMap for font "ipamjm.ttf"
 どこで生まれたのか頓と見當がつかぬ。
 何ても\CID{13638}\CID{13977}いじめじめした\CID{13826}で
 ニャー〳〵泣いて居た事\CID{13463}は\MJMZM{24358}\MJMZM{11957}している。
-\end{document}
-</pre>
+\end{document}</code></pre>
 
 <p>結果は以下のようになります。</p>
 
@@ -119,16 +115,12 @@ dvipdfmx:warning: Failed to load ToUnicode CMap for font "ipamjm.ttf"
 
 <p>ZVP形式ではVFに対応するJFMも一緒に扱えますが、ZVP0形式はそうではないため、JFMは別に準備する必要があります。JFMは元のJFMと全く同じもので良いため、単純にコピーするだけです。</p>
 
-<pre>
-$ cp $TEXMFDIST/fonts/tfm/public/jlreq-deluxe/jlreq--upnmlminrn-v.tfm wagahai-minr-v.tfm
-</pre>
+<pre><code>$ cp $TEXMFDIST/fonts/tfm/public/jlreq-deluxe/jlreq--upnmlminrn-v.tfm wagahai-minr-v.tfm</code></pre>
 
 <p>元になるjlreq--upnmlminrn-vのVFをjfmutilでZVP0形式に変換し名前をwagahai-minr-v.zvp0に変更します。</p>
 
-<pre>
-$ jfmutil vf2zvp0 jlreq--upnmlminrn-v
-$ mv jlreq--upnmlminrn-v.zvp0 wagahai-minr-v.zvp0
-</pre>
+<pre><code>$ jfmutil vf2zvp0 jlreq--upnmlminrn-v
+$ mv jlreq--upnmlminrn-v.zvp0 wagahai-minr-v.zvp0</code></pre>
 
 <p>wagahai-minr-v.zvp0を編集していきます。まず、Adobe-Japan1の異体字を使いたいため、otfパッケージの<code>\CID</code>命令用のフォントotf-cjmr-vを追加します。「mr」は明朝Regular、「v」は縦組み用を表します。</p>
 
@@ -136,26 +128,22 @@ $ mv jlreq--upnmlminrn-v.zvp0 wagahai-minr-v.zvp0
 
 <p>jlreq--upnmlminrn-vはフォントを1つしか使っていないため、フォント番号1にotf-cjmr-vを割り当てることにします。他の<code>MAPFONT</code>の続きに以下を追記します。</p>
 
-<pre>
-(MAPFONT D 1
+<pre><code>(MAPFONT D 1
    (FONTNAME otf-cjmr-v)
    (FONTCHECKSUM O 0)
    (FONTAT R 1.0)
    (FONTDSIZE R 10.0)
-   )
-</pre>
+   )</code></pre>
 
 <p>異体字にしたい文字ごとに<code>CHARACTER</code>を定義していきます。<code>CHARACTER</code>は文字コード順になるようにします。例えば「前」（U+524D）をCID+13889（16進で3641）をマップするには以下のような定義を書きます。（ZVP形式の場合は<code>CHARWD</code>は省略できます。）</p>
 
-<pre>
-(CHARACTER H 524D
+<pre><code>(CHARACTER H 524D
    (CHARWD R 1.0)
    (MAP
       (SELECTFONT D 1)
       (SETCHAR H 3641)
       )
-   )
-</pre>
+   )</code></pre>
 
 <p>次にIPAmj明朝の異体字を使えるようにしていきます。IPAmj明朝ではAdobe-Japan1フォントでCIDを指定するようにMJ番号で指定することができません。GIDに変換してやる必要があります。もちろんipamjmパッケージはMJ番号からIPAmj明朝フォントのGIDに変換しているのですが、そのためのVFはpTeXのサポートするJIS漢字コードの範囲に収めるために分割されていたり、文字コード変換をしていたりしてややこしくなっています。</p>
 
@@ -163,32 +151,26 @@ $ mv jlreq--upnmlminrn-v.zvp0 wagahai-minr-v.zvp0
 
 <p>ipamjmm--vをフォント番号2で追加します。</p>
 
-<pre>
-(MAPFONT D 2
+<pre><code>(MAPFONT D 2
    (FONTNAME ipamjmm--v)
    (FONTCHECKSUM O 0)
    (FONTAT R 1.0)
    (FONTDSIZE R 10.0)
-   )
-</pre>
+   )</code></pre>
 
 <p>例えば「記」（U+8A18）をMJ024358（16進で5F26）にマップするには以下のような定義を書きます。</p>
 
-<pre>
-(CHARACTER H 8A18
+<pre><code>(CHARACTER H 8A18
    (CHARWD R 1.0)
    (MAP
       (SELECTFONT D 2)
       (SETCHAR H 5F26)
       )
-   )
-</pre>
+   )</code></pre>
 
 <p>ZVP0ファイルの編集が終わったらjfmutilのzvp02vfコマンドでVFに変換します。</p>
 
-<pre>
-$ jfmutil zvp02vf wagahai-minr-v
-</pre>
+<pre><code>$ jfmutil zvp02vf wagahai-minr-v</code></pre>
 
 <h3>VFで異体字するサンプル</h3>
 
@@ -200,8 +182,7 @@ $ jfmutil zvp02vf wagahai-minr-v
   <li>jlreqクラスでフォントサイズオプションを使っていないので和文スケールは「1」です。</li>
 </ul>
 
-<pre>
-\documentclass[uplatex,dvipdfmx,a6paper,tate,landscape]{jlreq}
+<pre><code class="language-tex">\documentclass[uplatex,dvipdfmx,a6paper,tate,landscape]{jlreq}
 \usepackage{bxpapersize}
 \usepackage{jlreq-deluxe}
 \makeatletter
@@ -214,8 +195,7 @@ $ jfmutil zvp02vf wagahai-minr-v
 どこで生まれたのか頓と見當がつかぬ。
 何ても暗薄いじめじめした所で
 ニャー〳〵泣いて居た事丈は記憶している。
-\end{document}
-</pre>
+\end{document}</code></pre>
 
 <p>結果は先ほどのサンプルと同じになるはずです。</p>
 
@@ -227,8 +207,7 @@ $ jfmutil zvp02vf wagahai-minr-v
 
 <p>一方MJの異体字は原ノ味フォントではサポートされていないのでそのままでは使えませんが、LuaLaTeXでは簡単にフォントを変更できるのでその部分だけフォントをIPAmj明朝に切り替えることで簡単にMJの異体字を使うことができます。（もしかしたら、“最強”のLuaLaTeXならその部分だけ自動的にフォントを変更する方法があるかもしれません。）</p>
 
-<pre>
-\documentclass[lualatex,a6paper,tate,landscape]{jlreq}
+<pre><code class="language-tex">\documentclass[lualatex,a6paper,tate,landscape]{jlreq}
 \usepackage{luatexja-fontspec}
 \newjfontfamily{\ipamjmfamily}[
   YokoFeatures={JFM=jlreq},
@@ -241,8 +220,7 @@ $ jfmutil zvp02vf wagahai-minr-v
 どこで生まれたのか頓と見當がつかぬ。
 何ても暗󠄁薄󠄁いじめじめした所󠄁で
 ニャー〳〵泣いて居た事丈󠄁は\MJ{記󠄂憶󠄂}している。
-\end{document}
-</pre>
+\end{document}</code></pre>
 
 <p>こちらも最初のサンプルとほぼ同じになるはずです。</p>
 

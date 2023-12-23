@@ -31,31 +31,23 @@
 
 <p>少し古いpLaTeXの入門記事には以下のようなコードが書かれていることも多いと思います。</p>
 
-<pre>
-\documentclass{jarticle}
-</pre>
+<pre><code class="language-tex">\documentclass{jarticle}</code></pre>
 
 <p>しかし、最近のpLaTeX + dvipdfmx（またはptex2pdf）でPDFを作成している場合、このコードは間違っています。</p>
 
 <p>このファイルを最近のpLaTeXでタイプセットすると以下のような行がログに出力されていると思います。</p>
 
-<pre>
-(c:/texlive/2021/texmf-dist/tex/latex/l3backend/l3backend-dvips.def)))
-</pre>
+<pre><code>(c:/texlive/2021/texmf-dist/tex/latex/l3backend/l3backend-dvips.def)))</code></pre>
 
 <p>この<code>l3backend-dvips.def</code>は名前の通りdvipsバックエンド用のファイルです。つまり上記のようなファイルを最近の(u)pLaTeXでタイプセットするとdvips<strong>専用</strong>のDVIファイルが出来上がります。当然このDVIファイルをdvipdfmxで処理した結果は期待通りの出力になるとは限りません。</p>
 
 <p>(u)pLaTeX + dvipdfmxでPDFを作成する場合は以下のように<code>\documentclass</code>のオプションに<strong>必ず</strong><code>dvipdfmx</code>を指定する必要があります。</p>
 
-<pre>
-\documentclass[dvipdfmx]{jarticle}
-</pre>
+<pre><code class="language-tex">\documentclass[dvipdfmx]{jarticle}</code></pre>
 
 <p>そうすれば以下のように正しくdvipdfmxバックエンド用のファイル<code>l3backend-dvipdfmx.def</code>が読み込まれます。</p>
 
-<pre>
-(c:/texlive/2021/texmf-dist/tex/latex/l3backend/l3backend-dvipdfmx.def
-</pre>
+<pre><code>(c:/texlive/2021/texmf-dist/tex/latex/l3backend/l3backend-dvipdfmx.def</code></pre>
 
 <p>しかし、初心者ユーザーがこの「おまじない」を入れ忘れてしまったり、LuaLaTeXのようなPDF出力エンジンを使用しているのに「おまじない」を入れてしまたりしてトラブルを引き起こすのは想像に難くないでしょう。この「おまじない」をしなくてすむ方法はないものでしょうか。</p>
 
@@ -80,8 +72,7 @@
 
 <p>TeXエンジン終了時のDVIファイルをクローズ後に自動的にdvipdfmxが起動されPDFファイルが出力されます。</p>
 
-<pre>
-&gt;dir /b
+<pre><code>&gt;dir /b
 test.tex
 
 &gt;type test.tex
@@ -119,8 +110,7 @@ test.aux
 test.dvi
 test.log
 test.pdf
-test.tex
-</pre>
+test.tex</code></pre>
 
 <p>【追記】バイナリは<a href="https://gist.github.com/h20y6m/c4cdd4548334060e7d96afe11675faa3">2日目</a>に作った<a href="https://github.com/h20y6m/tlptexbeta">独自リポジトリ</a>にこっそり入れておきます。</p>
 

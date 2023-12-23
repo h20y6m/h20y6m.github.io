@@ -79,8 +79,7 @@
 
 <p>まずはMT19937のパラメータ定数を定義します。</p>
 
-<pre>
-% constant n, m
+<pre><code class="language-tex">% constant n, m
 \int_const:Nn \c_mt_n_int { 624 }
 \int_const:Nn \c_mt_m_int { 397 }
 % constant a
@@ -97,68 +96,54 @@
 % constant l
 \biguint_const:Nn \c_mt_l_biguint { 18 }
 % constant f
-\biguint_const:Nn \c_mt_f_biguint { 1812433253 }
-</pre>
+\biguint_const:Nn \c_mt_f_biguint { 1812433253 }</code></pre>
 
 <p>つぎに変数を定義します。</p>
 
-<pre>
-% state MT[0..(n-1)]
+<pre><code class="language-tex">% state MT[0..(n-1)]
 \int_step_inline:nnn { 0 } { \c_mt_n_int - 1 }
   { \biguint_new:c { g_mt_MT[ #1 ]_biguint } }
 % index
 \int_new:N \g_mt_index_int
-\int_gset:Nn \g_mt_index_int { \c_mt_n_int + 1}
-</pre>
+\int_gset:Nn \g_mt_index_int { \c_mt_n_int + 1}</code></pre>
 
 <p>それから生成した乱数を返すための変数です。</p>
 
-<pre>
-\biguint_new:N \g_mt_result_biguint
-</pre>
+<pre><code class="language-tex">\biguint_new:N \g_mt_result_biguint</code></pre>
 
 <p>そのほか実装で使用する定数です。</p>
 
-<pre>
-\biguint_const:Nn \c_mt_lower_mask_biguint { "7FFF FFFF }
+<pre><code class="language-tex">\biguint_const:Nn \c_mt_lower_mask_biguint { "7FFF FFFF }
 \biguint_const:Nn \c_mt_upper_mask_biguint { "8000 0000 }
 \biguint_const:Nn \c_mt_wbits_mask_biguint { "FFFF FFFF }
-\biguint_const:Ne \c_mt_w_minus_two_biguint { \int_eval:n { 32 - 2 } }
-</pre>
+\biguint_const:Ne \c_mt_w_minus_two_biguint { \int_eval:n { 32 - 2 } }</code></pre>
 
 <p>使用する一時変数です。</p>
 
-<pre>
-\biguint_new:N \l__mt_tempa_biguint
+<pre><code class="language-tex">\biguint_new:N \l__mt_tempa_biguint
 \biguint_new:N \l__mt_tempb_biguint
 \biguint_new:N \l__mt_y_biguint
 \biguint_new:N \l__mt_x_biguint
-\biguint_new:N \l__mt_xA_biguint
-</pre>
+\biguint_new:N \l__mt_xA_biguint</code></pre>
 
 <p>使用する関数の変種を生成しておきます。</p>
 
-<pre>
-\cs_generate_variant:Nn \biguint_shr:NNN { NcN }
+<pre><code class="language-tex">\cs_generate_variant:Nn \biguint_shr:NNN { NcN }
 \cs_generate_variant:Nn \biguint_bitand:NNN { NcN }
 \cs_generate_variant:Nn \biguint_gbitand:NNN { cNN }
 \cs_generate_variant:Nn \biguint_bitxor:NNN { NcN }
-\cs_generate_variant:Nn \biguint_gbitxor:NNN { ccN }
-</pre>
+\cs_generate_variant:Nn \biguint_gbitxor:NNN { ccN }</code></pre>
 
 <p>エラーメッセージを定義します。</p>
 
-<pre>
-\msg_new:nnn { mt } { never-seeded }
-  { Generator~was~never~seeded. }
-</pre>
+<pre><code class="language-tex">\msg_new:nnn { mt } { never-seeded }
+  { Generator~was~never~seeded. }</code></pre>
 
 <p>シードを設定するための<code>\mt_seed_mt:n</code>関数を定義します。</p>
 
 <p>expl3の<code>\int_step_inline:nnn</code>を使ってループしていますが、関数定義内なので<code>#</code>を二重にするのを忘れずに。biguintは今のところbiguint型の変数・定数の演算しかサポートしていないので、演算に使う値は予め定数としてよういしておくか、一時変数にセットする必要があります。</p>
 
-<pre>
-\cs_new_protected:Npn \mt_seed_mt:n #1
+<pre><code class="language-tex">\cs_new_protected:Npn \mt_seed_mt:n #1
   {
     \int_gset_eq:NN \g_mt_index_int \c_mt_n_int
     \biguint_gset:cn  { g_mt_MT[ 0 ]_biguint } { #1 }
@@ -191,8 +176,7 @@
           \l__mt_tempa_biguint
           \c_mt_wbits_mask_biguint
       }
-  }
-</pre>
+  }</code></pre>
 
 <p>乱数を生成する関数を定義します。結果はグローバル変数<code>\g_mt_result_biguint</code>にセットされます。</p>
 
@@ -200,8 +184,7 @@
 
 <p><code>c</code>変種で名前を作るときにint型の変数を使っています。int型の変数は展開可能ではないので<code>\int_use:N</code>などを忘れないようにしましょう。</p>
 
-<pre>
-\cs_new_protected:Npn \mt_extract_number:
+<pre><code class="language-tex">\cs_new_protected:Npn \mt_extract_number:
   {
     % if index &gt;= n
     \int_compare:nNnF { \g_mt_index_int } &lt; { \c_mt_n_int }
@@ -247,15 +230,13 @@
     % return
     \biguint_gset_eq:NN
       \g_mt_result_biguint \l__mt_y_biguint
-  }
-</pre>
+  }</code></pre>
 
 <p>メルセンヌ・ツイスタの名前の由来でもある？内部状態を「ツイスト」する関数を定義します。</p>
 
 <p><code>% if (x mod 2) != 0</code>の所はつまりは奇数かどうかの判定なので普通に<code>\biguint_if_odd:NT</code>を使っています。</p>
 
-<pre>
-\cs_new_protected:Npn \mt_twist:
+<pre><code class="language-tex">\cs_new_protected:Npn \mt_twist:
   {
     \int_step_inline:nnn { 0 } { \c_mt_n_int - 1 }
       {
@@ -287,13 +268,11 @@
       }
     % index := 0
     \int_gzero:N \g_mt_index_int
-  }
-</pre>
+  }</code></pre>
 
 <p>デバッグ用に内部状態を出力する関数も用意しておきます。</p>
 
-<pre>
-\cs_new_protected:Npn \mt_show:
+<pre><code class="language-tex">\cs_new_protected:Npn \mt_show:
   { \mt__dump:N \tl_show:N }
 \cs_new_protected:Npn \mt_log:
   { \mt__dump:N \tl_log:N }
@@ -309,8 +288,7 @@
     \tl_put_right:Ne \l__mt_dump_tl
       { \int_use:N \g_mt_index_int }
     #1 \l__mt_dump_tl
-  }
-</pre>
+  }</code></pre>
 
 <p>LaTeXから使うための命令を定義しておきます。</p>
 
@@ -320,15 +298,13 @@
   <li><code>\MTnumber</code>：<code>\MTrand</code>で生成した乱数の十進表記に展開される。（0 ～ 2<sup>32</sup> &minus; 1）</li>
 </ul>
 
-<pre>
-% LaTeX2e interface
+<pre><code class="language-tex">% LaTeX2e interface
 \NewDocumentCommand \MTseed { m }
   { \mt_seed_mt:n {#1} }
 \NewDocumentCommand \MTrand {}
   { \mt_extract_number: }
 \NewExpandableDocumentCommand \MTnumber {}
-  { \biguint_to_decimal:N \g_mt_result_biguint }
-</pre>
+  { \biguint_to_decimal:N \g_mt_result_biguint }</code></pre>
 
 <ul>
   <li><a href="https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine">std::mersenne_twister_engine - cppreference.com</a></li>
@@ -336,8 +312,7 @@
 
 <p>によると、デフォルトのシード5489のときに10000個目の乱数が4123659995になるみたいなので確かめてみます。</p>
 
-<pre>
-\documentclass[a4paper,twocolumn]{article}
+<pre><code class="language-tex">\documentclass[a4paper,twocolumn]{article}
 \ExplSyntaxOn
 % さっきのコード
 \ExplSyntaxOff
@@ -350,8 +325,7 @@
     $ [\x] = \MTnumber $%
     \par
   }%
-\end{document}
-</pre>
+\end{document}</code></pre>
 
 <p>実行してみるとちゃんと10000個目の乱数が4123659995になっているのが確認できます。</p>
 

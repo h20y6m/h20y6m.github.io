@@ -33,9 +33,7 @@
 
 <p>(u)pLaTeXで多書体化と言えば真っ先に思いつくのは<a href="https://github.com/texjporg/japanese-otf-mirror">otfパッケージ</a>のdeluxeオプションでしょう。</p>
 
-<pre>
-\usepackage[deluxe]{otf}
-</pre>
+<pre><code class="language-tex">\usepackage[deluxe]{otf}</code></pre>
 
 <p>これだけで</p>
 
@@ -53,8 +51,7 @@
 
 <p>ではjlreqクラスではどうなるか、以下の例をタイプセットしてましょう（<a href="https://qiita.com/zr_tex8r/items/91ae1dcc9c3afce7fa8c">こちらの記事</a>の例をpLaTeX用に改変しました）。</p>
 
-<pre>
-% pLaTeX+dvipdfmx 文書
+<pre><code class="language-tex">% pLaTeX+dvipdfmx 文書
 % A6判縦組, 一段組, 基底サイズ9pt
 \documentclass[dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
 % ぶら下げ組を有効にする
@@ -66,8 +63,7 @@
 \begin{document}
 %「吾輩は猫である」の4～6段落目の文章
 \jalipsum[4-6]{wagahai}
-\end{document}
-</pre>
+\end{document}</code></pre>
 
 <p>出力結果を見ると<code>hanging_punctuation</code>を指定しているのにぶら下げ組になっていません（<code>\usepackage[deluxe,scale=1]{otf}</code>をコメントアウトして比べてみてください）。ぶら下げ組は分かりやすい例ですが、それ以外にも文字間のアキの入り方が変わってきます。</p>
 
@@ -83,9 +79,7 @@
 
 <p>jlreqクラスは組み方に合わせて様々なJFMを使っています。(u)pLaTeXの場合に使われるJFMの名前は以下のようになっています。</p>
 
-<pre>
-[u][b][z]jlreq[g][-v]
-</pre>
+<pre><code>[u][b][z]jlreq[g][-v]</code></pre>
 
 <ul>
   <li><code>u</code>: upLaTeX用</li>
@@ -107,17 +101,14 @@
 
 <p>まずjfmutilを利用してVF/JFMのコピーを作成します。</p>
 
-<pre>
-&gt; jfmutil vfcopy bjlreq   kyor-bjlreq   r-kyor-bjlreq
+<pre><code>&gt; jfmutil vfcopy bjlreq   kyor-bjlreq   r-kyor-bjlreq
 &gt; jfmutil vfcopy bjlreq-v kyor-bjlreq-v r-kyor-bjlreq-v
 &gt; jfmutil vfcopy bjlreq   kyob-bjlreq   r-kyob-bjlreq
-&gt; jfmutil vfcopy bjlreq-v kyob-bjlreq-v r-kyob-bjlreq-v
-</pre>
+&gt; jfmutil vfcopy bjlreq-v kyob-bjlreq-v r-kyob-bjlreq-v</code></pre>
 
 <p>次のようなソースファイルを作成します。</p>
 
-<pre>
-\documentclass[platex,dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
+<pre><code class="language-tex">\documentclass[platex,dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
   hanging_punctuation]{jlreq}
 \usepackage{bxpapersize}
 \usepackage{bxjalipsum}
@@ -138,8 +129,7 @@
 \jalipsum[4]{wagahai}\par
 {\bfseries\jalipsum[5]{wagahai}\par}
 \jalipsum[6]{wagahai}\par
-\end{document}
-</pre>
+\end{document}</code></pre>
 
 <p>なお<code>\DeclareFontShape</code>の<code>[1]</code>の部分はクラスオプションの<code>fontsize</code>・<code>jafontsize</code>・<code>jafontscale</code>に応じた適切な和文スケールにする必要があります。</p>
 
@@ -155,15 +145,12 @@
 
 <p>まずjfmutilのjodelサブコマンドでVF/JFMを作成します。</p>
 
-<pre>
-&gt; jfmutil jodel bjlreq   bjlreq
-&gt; jfmutil jodel bjlreq-v bjlreq
-</pre>
+<pre><code>&gt; jfmutil jodel bjlreq   bjlreq
+&gt; jfmutil jodel bjlreq-v bjlreq</code></pre>
 
 <p>あとはotfパケージの代わりにpxjodelパケージを<code>prefix</code>オプション付きで読み込むだけです。</p>
 
-<pre>
-\documentclass[platex,dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
+<pre><code class="language-tex">\documentclass[platex,dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
   hanging_punctuation]{jlreq}
 \usepackage{bxpapersize}
 % otfパケージの代わりにpxjodelパケージを読み込む
@@ -178,8 +165,7 @@
 森\UTF{9DD7}外と内田百\UTF{9592}とが\UTF{9AD9}島屋に行くところを想像した。\par
 \CID{7652}飾区の\CID{13706}野家\par
 \ajSnowman は素敵\par
-\end{document}
-</pre>
+\end{document}</code></pre>
 
 <h2>jlreq-deluxeパケージ</h2>
 
@@ -187,8 +173,7 @@
 
 <p>そこで読み込むだけでjlreqクラスを多書体化できる<a href="https://github.com/h20y6m/jlreq-deluxe">jlreq-deluxeパッケージ</a>を作成しました。</p>
 
-<pre>
-\documentclass[platex,dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
+<pre><code class="language-tex">\documentclass[platex,dvipdfmx,tate,book,paper=a6,fontsize=9pt,onecolumn,
   hanging_punctuation]{jlreq}
 \usepackage{bxpapersize}
 % jlreq-deluxeパケージを読み込むだけ
@@ -202,8 +187,7 @@
 森\UTF{9DD7}外と内田百\UTF{9592}とが\UTF{9AD9}島屋に行くところを想像した。\par
 \CID{7652}飾区の\CID{13706}野家\par
 \ajSnowman は素敵\par
-\end{document}
-</pre>
+\end{document}</code></pre>
 
 <p>pxjodelパッケージを使う場合に比べて以下の特徴があります。</p>
 

@@ -61,16 +61,14 @@
 
 <p>以下のような構成でディレクトリを作成します。このディレクトリはGitでバージョン管理することにします。</p>
 
-<pre>
-./
+<pre><code>./
 |-- bin/
 |   |-- win32/
 |   `-- x86_64-linux/
 |-- texmf-dist/
 |   `-- web2c/
 `-- tlpkg/
-    `-- tlpsrc/
-</pre>
+    `-- tlpsrc/</code></pre>
 
 <ul>
   <li>bin/
@@ -115,14 +113,12 @@
   </li>
 </ul>
 
-<pre>
-category TLCore
+<pre><code>category TLCore
 depend container_format/xz
 depend container_split_doc_files/1
 depend container_split_src_files/1
 depend minrelease/2021
-depend release/2021-tlptexbeta
-</pre>
+depend release/2021-tlptexbeta</code></pre>
 
 <ul>
   <li>00texlive.installation.tlpsrc
@@ -133,8 +129,7 @@ depend release/2021-tlptexbeta
   </li>
 </ul>
 
-<pre>
-category TLCore
+<pre><code>category TLCore
 depend opt_autobackup:1
 depend opt_backupdir:tlpkg/backups
 depend opt_create_formats:1
@@ -149,8 +144,7 @@ depend opt_sys_bin:/usr/local/bin
 depend opt_sys_info:/usr/local/share/info
 depend opt_sys_man:/usr/local/share/man
 depend opt_w32_multi_user:1
-depend setting_available_architectures:win32 x86_64-linux
-</pre>
+depend setting_available_architectures:win32 x86_64-linux</code></pre>
 
 <h3>独自パッケージの定義</h3>
 
@@ -158,8 +152,7 @@ depend setting_available_architectures:win32 x86_64-linux
 
 <p>今回はptex-betaという名前で独自パッケージを作成します。以下の内容でtlpkg/tlpsrc/ptex-beta.tlpsrcを作成します。</p>
 
-<pre>
-category Package
+<pre><code>category Package
 shortdesc Development version pTeX
 depend platex
 depend ptex
@@ -180,8 +173,7 @@ binpattern f bin/${ARCH}/platex-beta-dev
 binpattern f bin/${ARCH}/ptex-beta
 binpattern f bin/${ARCH}/uplatex-beta
 binpattern f bin/${ARCH}/uplatex-beta-dev
-binpattern f bin/${ARCH}/uptex-beta
-</pre>
+binpattern f bin/${ARCH}/uptex-beta</code></pre>
 
 <ul>
   <li><code>shortdesc</code>
@@ -219,8 +211,7 @@ binpattern f bin/${ARCH}/uptex-beta
 
 <p>以下のようなDockerfileを作成します。</p>
 
-<pre>
-FROM ubuntu:20.04
+<pre><code>FROM ubuntu:20.04
 
 RUN apt-get update \
  &amp;&amp; apt-get install -y --no-install-recommends \
@@ -243,21 +234,16 @@ RUN mkdir -p /opt/texlive/tlpkg &amp;&amp; cd /opt/texlive/tlpkg \
 
 ENV PATH /opt/texlive/tlpkg/bin:$PATH
 
-WORKDIR /work
-</pre>
+WORKDIR /work</code></pre>
 
 <p>コンテナイメージをビルドしておきます。</p>
 
-<pre>
-podman build -t tl-update .
-</pre>
+<pre><code>podman build -t tl-update .</code></pre>
 
 <p>以下の二つのコマンドでデータベースとコンテナファイルを生成します。</p>
 
-<pre>
-podman run --rm -it -v `pwd`:/work tl-update tl-update-tlpdb --master=/work --from-git
-podman run --rm -it -v `pwd`:/work tl-update tl-update-containers --master=/work --location=/work/dist --no-sign --all --recreate
-</pre>
+<pre><code>podman run --rm -it -v `pwd`:/work tl-update tl-update-tlpdb --master=/work --from-git
+podman run --rm -it -v `pwd`:/work tl-update tl-update-containers --master=/work --location=/work/dist --no-sign --all --recreate</code></pre>
 
 <p>（初回は<code>--recreate</code>オプションが必要なようです。）</p>
 
@@ -271,24 +257,19 @@ podman run --rm -it -v `pwd`:/work tl-update tl-update-containers --master=/work
   <li>Linux</li>
 </ul>
 
-<pre>
-tlmgr repository add /path/to/tlptexbeta/dist ptexbeta
-tlmgr pinning add ptexbeta '*'
-</pre>
+<pre><code>tlmgr repository add /path/to/tlptexbeta/dist ptexbeta
+tlmgr pinning add ptexbeta '*'</code></pre>
 
 <ul>
   <li>Windows（コマンドプロンプトを管理者として実行）</li>
 </ul>
 
-<pre>
-tlmgr repository add C:/path/to/tlptexbeta/dist ptexbeta
-tlmgr pinning add ptexbeta "*"
-</pre>
+<pre><code>tlmgr repository add C:/path/to/tlptexbeta/dist ptexbeta
+tlmgr pinning add ptexbeta "*"</code></pre>
 
 <p>インストールする前にtexlive/2021/texmf.cnfに以下を追記します。（内容はtexlive/2021/texmf-dist/web2c/texmf.cnfの-betaなしのものからコピーしたものです。）</p>
 
-<pre>
-% ptex-beta
+<pre><code>% ptex-beta
 TEXINPUTS.eptex-beta       = $TEXMFDOTDIR;$TEXMF/tex/{ptex,plain,generic,latex,}//
 TEXINPUTS.euptex-beta      = $TEXMFDOTDIR;$TEXMF/tex/{uptex,ptex,plain,generic,latex,}//
 TEXINPUTS.platex-beta      = $TEXMFDOTDIR;$TEXMF/tex/{platex,latex,generic,}//
@@ -296,19 +277,15 @@ TEXINPUTS.platex-beta-dev  = $TEXMFDOTDIR;$TEXMF/tex/{latex-dev,platex,latex,gen
 TEXINPUTS.ptex-beta        = $TEXMFDOTDIR;$TEXMF/tex/{ptex,plain,generic,latex,}//
 TEXINPUTS.uplatex-beta     = $TEXMFDOTDIR;$TEXMF/tex/{uplatex,platex,latex,generic,}//
 TEXINPUTS.uplatex-beta-dev = $TEXMFDOTDIR;$TEXMF/tex/{latex-dev,uplatex,platex,latex,generic,}//
-TEXINPUTS.uptex-beta       = $TEXMFDOTDIR;$TEXMF/tex/{uptex,ptex,plain,generic,latex,}//
-</pre>
+TEXINPUTS.uptex-beta       = $TEXMFDOTDIR;$TEXMF/tex/{uptex,ptex,plain,generic,latex,}//</code></pre>
 
 <p>TeX Live Managerからptex-betaパッケージをインストールします。TeX Live ManagerのGUIからもインストールできます。</p>
 
-<pre>
-tlmgr install ptex-beta
-</pre>
+<pre><code>tlmgr install ptex-beta</code></pre>
 
 <p>適当なファイルをコンパイルしてインストールできたか確認します。</p>
 
-<pre>
-$ cat test.tex
+<pre><code>$ cat test.tex
 \documentclass[dvipdfmx,a4paper]{jarticle}
 \usepackage{bxjalipsum}
 \begin{document}
@@ -331,8 +308,7 @@ Document Class: jarticle 2020/09/30 v1.8f Standard pLaTeX class
 (|extractbb --version)) (./test.aux) [1] [2] [3] [4] [5] [6] [7] [8] [9]
 (./test.aux) )
 Output written on test.dvi (9 pages, 51952 bytes).
-Transcript written on test.log.
-</pre>
+Transcript written on test.log.</code></pre>
 
 <p>うまくいったようです。</p>
 
